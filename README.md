@@ -60,3 +60,12 @@ do
 ```
 
 If all goes well, the game will be built as `build\j.gb`.
+
+### Alternative Drive Letter
+
+In some instances, your J: drive letter might already be in use.  If this is the case,  do the following, then replace all references to j in the above instructions with the drive letter you did end up using instead.
+
+```
+cd \path\to\infinity\bin
+setup [DRIVE_LETTER_NOT_IN_USE]
+```
