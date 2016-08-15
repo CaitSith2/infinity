@@ -1,0 +1,176 @@
+;Here is the GBS initialize routine.
+	.ORG	0x3F00
+	.db 0x47, 0x42, 0x53, 0x01	;GBS Version 1
+	.db 0x50			;24 songs + 56 SFX
+	.db 0x01			;Starting song.
+	.dw song_table:			;Loading address
+	.dw Init_routine:		;Init Address
+	.dw 0x4003			;Play routine
+	.dw 0xDF80			;Stack Pointer Address
+	.db 0x00, 0x00			;Timer Controls
+	.org 0x3F10			;Title String
+	.ascii "Infinity GBC"
+	.db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	.org 0x3F30			;Author String
+	.ascii "Eric Hache"
+	.db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	.org 0x3F50			;Copyright String
+	       ;0123456789ABCDEF0123456789ABCDE
+	.asciz "1999-2016 Affinix Software, LLC"
+	.org 0x3F70
+
+
+
+song_table:
+	.db 14, 1	;Boss Battle
+	.db 3, 0	;Tagel Castle
+	.db 7, 0	;The Cave
+	.db 7, 1	;The Creator
+	.db 8, 0	;The Creator (Evil)
+	.db 4, 0	;Trouble!
+	.db 9, 0	;Fight
+	.db 15,0	;Rest
+	.db 15,1	;Game Over
+	.db 15,2	;Victory
+	.db 5, 0	;The Great Dark
+	.db 8, 1	;Ice Cavern
+	.db 9, 1	;Kassim, Desert City
+	.db 6, 0	;The Unnamed - Final Battle
+	.db 10, 0	;Mountain Pass
+	.db 10, 1	;Mystery
+	.db 11, 0	;Mystic
+	.db 12, 0	;The Overworld
+	.db 11, 1	;The Great Wood
+	.db 12, 1	;Sadness
+	.db 13, 0	;Sailing
+	.db 10, 2	;Title
+	.db 13, 1	;Town I
+	.db 13, 2	;Town II
+	.db 14, 0	;Alutha Castle (Old)
+	.db 16, 0	;Alutha Castle (New)
+	.db 2, 0	;Ending Theme part 1
+	.db 1, 0	;Ending Theme part 2
+
+
+Init_Routine:	
+	PUSH BC
+	PUSH DE
+
+	CP A, #0x1C	; There are 28 songs in this GBS.  After that, are SFX.
+	JR  C, $+3	; Coninue to Song playback code, if song select is < 28. (0 based counting.)
+	JP  Play_SFX	; Skip to SFX playback.
+
+	LD DE, #0x2000	;Bank selection is done by writing to Address 0x2000.
+	LD HL, #song_table
+	ADD A, A	
+	ADD A, L
+	LD L, A
+	LD A, (HL)	;Load desired bank number
+	LD (DE), A	;And select that bank.
+	INC L		;Next will be the song number within that bank.
+	PUSH HL
+	
+	
+
+    call 0x4000		;Call the sound system initialize routine in selected bank.
+	POP HL
+	LD A, (HL)	;Now load A with desired song number in the bank
+	POP BC
+	POP DE
+    	jp 0x4006	;And jump to start music in that bank.
+
+Play_SFX:
+	sub A, #0x1C	;Since we are here, SFX start from 0, not 28, so, we must
+	LD DE, #0x2000	;subtract 28 from the selection.
+	PUSH AF
+	LD A, #0x01	;Select Bank 1.  (All banks have same SFX.
+	ld (DE), A
+	call 0x4000	;Initialize sound engine.
+	POP AF
+	POP BC
+	POP DE
+	CP A, #44	;SFX 44 is reset_sound_chip, aka silence. Skip it.
+	JR C, $+1
+	INC A
+	jp  0x400F	;and play selected SFX.
+
+;What follows from here on,  are the 16 audio banks.
+
+;Banks are mapped as follows.
+;01: 0=ending part 2
+;02: 0=ending part 1
+;03: 0=castle
+;04: 0=trouble
+;05: 0=great dart
+;06: 0=last boss
+;07: 0=cave, 1=creator
+;08: 0=creator evil, 1=ice cavern
+;09: 0=battle, 1=kassim
+;10: 0=mountain, 1=mystery, 2=title
+;11: 0=mystic, 1=forest
+;12: 0=overworld, 1=sadness
+;13: 0=sailing, 1=town1, 2=town2
+;14: 0=alutha (old), 1=boss1
+;15: 0=rest, 1=game over, 2=victory
+;16: 0=alutha (new)
+
+;And the SFX as follows.
+
+SFX_sword EQU 5
+SFX_open1 EQU 2
+SFX_open EQU 1
+SFX_knock EQU 0
+SFX_finditem EQU 3
+SFX_buy EQU 4
+SFX_menuopen EQU 6
+SFX_menucursor EQU 7
+SFX_menuaccept EQU 8
+SFX_menucancel EQU 9
+SFX_menuerror EQU 10
+SFX_arrowshot EQU 11
+SFX_arrowhit EQU 12
+SFX_escape EQU 13
+SFX_claw EQU 14
+SFX_golem EQU 15
+SFX_throw EQU 16
+SFX_land EQU 17
+SFX_fall EQU 18
+SFX_engulf EQU 19
+SFX_engulfflame EQU 20
+SFX_tide EQU 21
+SFX_poof EQU 22
+SFX_staff EQU 23
+SFX_leaping EQU 24
+SFX_cure EQU 25
+SFX_sparkle EQU 26
+SFX_revive EQU 27
+SFX_soulslurp EQU 28
+SFX_sacrifice EQU 29
+SFX_startbattle EQU 30
+SFX_enemycast EQU 31
+SFX_lightning EQU 32
+SFX_charm EQU 33
+SFX_spawn EQU 34
+SFX_gem EQU 35
+SFX_levelup EQU 36
+SFX_towerraise EQU 37
+SFX_cannonfire EQU 39
+SFX_quakefade EQU 38
+SFX_reset_sound_chip EQU 44
+SFX_nighttime_looped EQU 40
+SFX_waves1 EQU 41
+SFX_waves2 EQU 42
+SFX_waves3 EQU 43
+SFX_inversion EQU 45
+SFX_justice EQU 46
+SFX_roar EQU 47
+SFX_whirlwind_looped EQU 48
+SFX_water_raise_lower EQU 49
+SFX_warp EQU 50
+SFX_rockgrind EQU 51
+SFX_roland_sword EQU 52
+SFX_ice_break EQU 53
+SFX_portalopen EQU 54
+SFX_criticalswordattack EQU 55
+SFX_splash EQU 56
+

@@ -1,10 +1,13 @@
-all: ../../bin/afzconv ../../bin/fixgb ../../bin/gfx2h ../../bin/inspage ../../bin/itemconv ../../bin/j2w ../../bin/pagesize ../../bin/pagify ../../bin/post ../../bin/proctext ../../bin/gbr2bin
+all: ../../bin/fixgbs ../../bin/afzconv ../../bin/fixgb ../../bin/gfx2h ../../bin/inspage ../../bin/itemconv ../../bin/j2w ../../bin/pagesize ../../bin/pagify ../../bin/post ../../bin/proctext ../../bin/gbr2bin
 
 enemy.o: enemy.c
 	gcc -o enemy.o -c enemy.c
 
 ../../bin/afzconv: enemy.o afzconv.c
 	gcc -o ../../bin/afzconv enemy.o afzconv.c
+
+../../bin/fixgbs: fixgbs.c
+	gcc -o ../../bin/fixgbs fixgbs.c
 
 ../../bin/fixgb: fixgb.c
 	gcc -o ../../bin/fixgb fixgb.c
