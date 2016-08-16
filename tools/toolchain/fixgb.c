@@ -19,7 +19,12 @@
 #include<stdio.h>
 #include<string.h>
 #include<memory.h>
-#include<malloc.h>
+
+#if !defined(__MACH__) || !defined(__APPLE__)
+#include <malloc.h>
+#else
+#include <stdlib.h>
+#endif
 
 unsigned char *buf;
 char title[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x80};
@@ -42,7 +47,7 @@ int find_deadbeef(unsigned char **addr, int size)
    return 0;
 }
 
-void main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
    FILE *f;
    unsigned int total;
