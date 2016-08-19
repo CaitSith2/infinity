@@ -17,16 +17,17 @@
  */
 
 #include<stdio.h>
+#include<string.h> // memset
 
-#if !defined(__MACH__) || !defined(__APPLE__)
-#include <malloc.h>
+#if defined(__MACH__) || defined(__APPLE__)
+#include<stdlib.h>
 #else
-#include <stdlib.h>
+#include<malloc.h>
 #endif
 
 //#include<mem.h>
 
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 	FILE *in, *out;
 	char *buf;
