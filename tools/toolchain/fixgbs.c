@@ -22,19 +22,57 @@
 #include<malloc.h>
 
 unsigned char *buf;
-char title[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x80};
-
-#define OP_JP  0xC3;
 
 int find_deadbeef(unsigned char **addr, int size)
 {
    int n;
+   int warn_load = 0;
+   int warn_play = 0;
+   int warn_stack = 0;
+   
+   int load, init, play, stack;
+   
    unsigned char *buf;
    char str[4] = { 0x47, 0x42, 0x53, 0x01 };
 
    buf = *addr;
    for(n = 0; n < size - 5; ++n) {
+   	   load = buf[n+6] + (buf[n+7] << 8);
+   	   init = buf[n+8] + (buf[n+9] << 8);
+   	   play = buf[n+10] + (buf[n+11] << 8);
+   	   stack = buf[n+12] + (buf[n+13] << 8);
+   	   
+   	   warn_load = warn_play = 0;
       if(!memcmp(buf + n, str, 4)) {
+      	  if(buf[n+5] > buf[n+4]) continue;	//First song exceeds number of songs, not permitted.
+      	  if ((stack < 0xC000) || (stack > 0xDFFF)) continue;	//Stack not in system ram
+      	  if (init < load) continue;	//Init address in undefined memory.
+      	  if (load >= 0x8000) continue;	//Load address NOT in rom space.
+      	  if (init >= 0x8000) continue;	//Init address NOT in rom space.
+      	  if (play < load)
+      	  {
+      	  	  if (play < 0x4000) continue;	//Play address is definitely in undefined memory.
+      	  	  warn_play = play;
+      	  }
+      	  if (load < 0x400) warn_load = load;
+      	  if (load >= 0x4000) warn_load = load;
+      	  if (play >= 0x8000) warn_play = play;
+      	  
+      	  
+      	  if (warn_load)
+      	  {
+      	  	  if (load < 0x400)
+      	  	  	  printf("Warning: Load address < 0x400; GBS won't be convertable to rom.\n");
+      	  	  else
+      	  	  	  printf("Warning: Load address NOT in bank 0\n");
+      	  }
+      	  if (warn_play)
+      	  {
+      	  	  if (play >= 0x8000)
+      	  	  	  printf("Warning: GBS play address located in RAM\n");
+      	  	  else
+      	  	  	  printf("Warning: Play address less than load address\n");
+      	  }
          return n;
       }
    }

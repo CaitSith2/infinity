@@ -25,24 +25,15 @@ GBS_Begin:
 
 Song_Table_Begin:
 .DB   0x0C,2         ; 00 - title
-	;.DB   0x01,4         ; 00o - title
 .DB   0x01,2         ; 01 - prophecy
 .DB   0x0E,0         ; 02 - overworld
-.DB   0x01,1         ; 02o - overworld
 .DB   0x0F,1         ; 03 - town1
-	;.DB   0x01,5         ; 03o - town1
 .DB   0x05,0         ; 04 - castle
-.DB   0x02,1         ; 04o - castle
 .DB   0x0C,0         ; 05 - mountain
-.DB   0x01,0         ; 05o - mountain
 .DB   0x0B,0         ; 06 - fight1
-.DB   0x02,2         ; 06o - fight1
 .DB   0x10,1         ; 07 - boss1
-.DB   0x02,0         ; 07o - boss1	(Mountain)
 .DB   0x11,0         ; 08 - rest
-.DB   0x01,3         ; 08o - rest
 .DB   0x11,1         ; 09 - game over
-.DB   0x02,3         ; 09o - game over
 .DB   0x09,0         ; 10 - cave
 .DB   0x09,1         ; 11 - creator
 .DB   0x0A,0         ; 12 - creator evil
@@ -63,6 +54,16 @@ Song_Table_Begin:
 .DB   0x04,0         ; 26 - ending1
 .DB   0x03,0         ; 27 - ending2
 .DB   0x11,3         ; 28 - nighttime
+
+;.DB   0x01,4         ; 00o - title
+.DB   0x01,1         ; 02o - overworld
+;.DB   0x01,5         ; 03o - town1
+.DB   0x02,1         ; 04o - castle
+.DB   0x01,0         ; 05o - mountain
+.DB   0x02,2         ; 06o - fight1
+.DB   0x02,0         ; 07o - boss1	(Mountain)
+.DB   0x01,3         ; 08o - rest
+.DB   0x02,3         ; 09o - game over
 Song_Table_End:
 
 GBS_Init:
