@@ -74,14 +74,14 @@ grw_part1a:
    set(C,$3d)
    goto(OVER_WARP)
 grw_part1b:
-   ;set(B,$4f)
-   ;set(C,$39)
-   ;goto(OVER_WARP)
-   fadeout(X_FADE)
-   song_off
-   say(MSG_END)
-   song(SNG_ALUTHA)
-   lock
+   set(B,$4f)
+   set(C,$39)
+   goto(OVER_WARP)
+   ;fadeout(X_FADE)
+   ;song_off
+   ;say(MSG_END)
+   ;song(SNG_ALUTHA)
+   ;lock
 
 
 grw_vict1:
