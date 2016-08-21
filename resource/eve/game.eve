@@ -16,7 +16,7 @@
 #include"itemdefs.h"
 
 ;Undefine this to remove the lock.
-;#define PREVIEW_ROM
+#define PREVIEW_ROM
 
 ; Game begins here
 
