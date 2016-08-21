@@ -5,8 +5,8 @@ cd /d %DRIVELETTER%:\gbs
 lcc -c gbs_songs.o gbs_songs.s
 lcc -c gbs.o gbs.c
 lcc -o gbs_songs.gbs gbs_songs.o gbs.o
-inspage gbs_songs.gbs ..\resource\audio1o.bin 1
-inspage gbs_songs.gbs ..\resource\audio2o.bin 2
+inspage gbs_songs.gbs ..\resource\audio1o.bin 2
+inspage gbs_songs.gbs ..\resource\audio2o.bin 1
 inspage gbs_songs.gbs ..\resource\audio1.bin 3
 inspage gbs_songs.gbs ..\resource\audio2.bin 4
 inspage gbs_songs.gbs ..\resource\audio3.bin 5
