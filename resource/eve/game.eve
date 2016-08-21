@@ -15,6 +15,9 @@
 #include"etxt.h"
 #include"itemdefs.h"
 
+;Undefine this to remove the lock.
+;#define PREVIEW_ROM
+
 ; Game begins here
 
    goto(INIT)                    ; $0000 Initialization
