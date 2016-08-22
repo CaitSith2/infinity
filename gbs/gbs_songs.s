@@ -1,6 +1,7 @@
 
 	.area	_HEADER (ABS)
 	.org 0x3F00
+	.dw GBS_End-GBS_Begin
 GBS_Begin:
 
 	.DB 0x47,0x42,0x53,1				; GBS File marker
@@ -11,58 +12,56 @@ GBS_Begin:
 	.dw 0x4003					;Play Address
 	.dw 0xDF80					;Stack Pointer
 	.db 0x00, 0x00					;Timer Controls
-	.org 0x3F10			;Title String
-	.ascii "Infinity GBC"
+	.ascii "Infinity GBC"				;Title String
 	.db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	.org 0x3F30			;Author String
-	.ascii "Eric Hache"
-	.db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	.org 0x3F50			;Copyright String
+	.ascii "Eric Hache"				;Author String
+	.db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0			
 	       ;0123456789ABCDEF0123456789ABCDE
-	.asciz "1999-2016 Affinix Software, LLC"
-	.org 0x3F70
+	.ascii "1999-2016 Affinix Software, LLC"	;Copyright String
+	.db 0
 
 
 Song_Table_Begin:
-.DB   0x0C,2         ; 00n - title
-.DB   0x01,4         ; 00o - title
-.DB   0x01,2         ; 01 - prophecy
-.DB   0x0E,0         ; 02n - overworld
-.DB   0x01,1         ; 02o - overworld
+.DB   0x0C,2         ; 01n - title
+.DB   0x01,4         ; 01o - title
+.DB   0x0C,1         ; 17 - mystery
 .DB   0x0F,1         ; 03n - town1
 .DB   0x01,5         ; 03o - town1
-.DB   0x05,0         ; 04n - castle
-.DB   0x02,1         ; 04o - castle
-.DB   0x0C,0         ; 05n - mountain
-.DB   0x01,0         ; 05o - mountain
+.DB   0x0E,1         ; 20 - sadness
+.DB   0x0E,0         ; 02n - overworld
+.DB   0x01,1         ; 02o - overworld
 .DB   0x0B,0         ; 06n - fight1
 .DB   0x02,2         ; 06o - fight1
-.DB   0x10,1         ; 07n - boss1
-.DB   0x02,0         ; 07o - boss1
+.DB   0x11,2         ; 19 - victory
+.DB   0x05,0         ; 04n - castle
+.DB   0x02,1         ; 04o - castle
+.DB   0x09,1         ; 11 - creator
 .DB   0x11,0         ; 08n - rest
 .DB   0x01,3         ; 08o - rest
+.DB   0x11,3         ; 28 - nighttime
+.DB   0x01,2         ; 01 - prophecy
+.DB   0x0C,0         ; 05n - mountain
+.DB   0x01,0         ; 05o - mountain
+.DB   0x10,1         ; 07n - boss1
+.DB   0x02,0         ; 07o - boss1
 .DB   0x11,1         ; 09n - game over
 .DB   0x02,3         ; 09o - game over
-.DB   0x09,0         ; 10 - cave
-.DB   0x09,1         ; 11 - creator
-.DB   0x0A,0         ; 12 - creator evil
-.DB   0x0F,2         ; 13 - town 2
 .DB   0x0B,1         ; 14 - kassim
+.DB   0x09,0         ; 10 - cave
 .DB   0x0D,1         ; 15 - forest
+.DB   0x0F,2         ; 13 - town 2
 .DB   0x10,0         ; 16n - alutha
 .DB   0x12,0         ; 16o - alutha
-.DB   0x0C,1         ; 17 - mystery
+.DB   0x0A,0         ; 12 - creator evil
 .DB   0x06,0         ; 18 - trouble
-.DB   0x11,2         ; 19 - victory
-.DB   0x0E,1         ; 20 - sadness
-.DB   0x0F,0         ; 21 - sailing
 .DB   0x0A,1         ; 22 - icecavern
-.DB   0x0D,0         ; 23 - mystic
+.DB   0x0F,0         ; 21 - sailing
 .DB   0x07,0         ; 24 - great dark
 .DB   0x08,0         ; 25 - lastboss
 .DB   0x04,0         ; 26 - ending1
 .DB   0x03,0         ; 27 - ending2
-.DB   0x11,3         ; 28 - nighttime
+.DB   0x0D,0         ; 02 - mystic
+
 
 Song_Table_End:
 
