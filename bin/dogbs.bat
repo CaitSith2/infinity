@@ -1,4 +1,8 @@
 @echo off
+setlocal
+
+if not exist %MAKE%\NUL mkdir %MAKE%
+
 set CUR_DIR=%CD%
 cd /d %MAKE%
 
