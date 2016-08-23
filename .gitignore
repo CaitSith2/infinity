@@ -1,9 +1,6 @@
 SDK/
 bin/*.exe
-build/*.o
-build/j.gb
-build/j.gbs
-build/j.map
+build/
 resource/eve/formdefs.h
 *.pag
 *.edt
@@ -16,9 +13,3 @@ resource/eve/itemdefs.h
 source/eve/itemdefs.h
 resource/ext/game.j2w
 tools/toolchain/enemy.o
-build/j.sym
-gbs/gbs.o
-*.gbs
-gbs/gbs_songs.map
-gbs/gbs_songs.o
-gbs/gbs_songs.sym
