@@ -18,6 +18,14 @@ int findGBSHeader(int offset)
 	return -1;
 }
 
+int findGBSEnd(int size)
+{
+	int i=size-1;
+	while(buf[i]==0xFF)
+		i--;
+	return i;
+}
+
 int main(int argc, char *argv[])
 {
 	FILE *f;
@@ -88,7 +96,8 @@ int main(int argc, char *argv[])
 		printf("Unable to open output gbs file %s\n",argv[2]);
 		return 1;
 	}
-	fwrite(&buf[i],1,size-i,f);
+	
+	fwrite(&buf[i],1,findGBSEnd(size)-i,f);
 	fclose(f);
 	printf("GBS File %s written\n",argv[2]);
 	return 0;

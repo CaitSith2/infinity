@@ -5,7 +5,7 @@
 GBS_Begin:
 
 	.DB 0x47,0x42,0x53,1				; GBS File marker
-	.DB ((Song_Table_End-Song_Table_Begin)/2)+30	;Number of Songs
+	.DB ((Song_Table_End-Song_Table_Begin)/2)+56	;Number of Songs
 	.DB 1						;Starting Song
 	.dw Song_Table_Begin				;Loading Address
 	.dw GBS_Init					;Init Address
@@ -56,11 +56,12 @@ Song_Table_Begin:
 .DB   0x06,0         ; 18 - trouble
 .DB   0x0A,1         ; 22 - icecavern
 .DB   0x0F,0         ; 21 - sailing
+.DB   0x0D,0         ; 02 - mystic
 .DB   0x07,0         ; 24 - great dark
 .DB   0x08,0         ; 25 - lastboss
 .DB   0x04,0         ; 26 - ending1
 .DB   0x03,0         ; 27 - ending2
-.DB   0x0D,0         ; 02 - mystic
+
 
 
 Song_Table_End:
@@ -97,7 +98,7 @@ Play_SFX:
 	sub A, #((Song_Table_End-Song_Table_Begin)/2)	;Since we are here, SFX start from 0, not 28, so, we must
 	LD DE, #0x2000	;subtract 28 from the selection.
 	PUSH AF
-	LD A, #0x01	;Select Bank 1.  (All banks have same SFX.
+	LD A, #0x03	;Select Bank 1.  (All banks have same SFX.
 	ld (DE), A
 	call 0x4000	;Initialize sound engine.
 	POP AF

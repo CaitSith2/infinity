@@ -6,10 +6,10 @@
 
 infinity.gbs::GBS,0,Title (new),0:54,,10
 infinity.gbs::GBS,1,Title (old),0:54,,10
-infinity.gbs::GBS,2,Mystic Happenings,2:00,,10
+infinity.gbs::GBS,2,Mysterious Happenings,2:00,,10
 infinity.gbs::GBS,3,Town I (new),0:50,,10
 infinity.gbs::GBS,4,Town I (old),0:50,,10
-infinity.gbs::GBS,5,Sadness,1:45,,10
+infinity.gbs::GBS,5,Nostalgic Sorrow,1:45,,10
 infinity.gbs::GBS,6,Overworld (new),1:34,,10
 infinity.gbs::GBS,7,Overworld (old),1:34,,10
 infinity.gbs::GBS,8,Inconvenient Nuisances (new),1:25,,10
@@ -38,8 +38,9 @@ infinity.gbs::GBS,30,The Madman Revealed,1:50,,10
 infinity.gbs::GBS,31,Trouble!,2:15,,10
 infinity.gbs::GBS,32,Frozen Cavern,2:01,,10
 infinity.gbs::GBS,33,Travelling Waters,1:00,,10
-infinity.gbs::GBS,34,Infiltrating the Dark,2:30,,10
-infinity.gbs::GBS,35,He Who Is Unnamed,1:58,,10
-infinity.gbs::GBS,36,Epilogue,2:47,,0
-infinity.gbs::GBS,37,Credit Roll,4:40,,10
-infinity.gbs::GBS,38,Mystic,1:30,,10
+infinity.gbs::GBS,34,Mystic,1:30,,10
+infinity.gbs::GBS,35,Infiltrating the Dark,2:30,,10
+infinity.gbs::GBS,36,He Who Is Unnamed,1:58,,10
+infinity.gbs::GBS,37,Epilogue,2:47,,0
+infinity.gbs::GBS,38,Credit Roll,4:40,,10
+
