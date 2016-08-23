@@ -40,4 +40,4 @@ enemy.o: enemy.c
 	g++ -Wall -o ../../bin/gbr2bin gbr2bin.cpp
 
 clean:
-	rm -f enemy.o ../../bin/afzconv ../../bin/fixgb ../../bin/gbr2bin ../../bin/gfx2h ../../bin/inspage ../../bin/itemconv ../../bin/j2w ../../bin/pagesize ../../bin/pagify ../../bin/post ../../bin/proctext
+	rm -f enemy.o ../../bin/afzconv ../../bin/fixgb ../../bin/fixgbs ../../bin/gbr2bin ../../bin/gfx2h ../../bin/inspage ../../bin/itemconv ../../bin/j2w ../../bin/pagesize ../../bin/pagify ../../bin/post ../../bin/proctext

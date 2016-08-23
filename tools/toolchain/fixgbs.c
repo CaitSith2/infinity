@@ -1,113 +1,95 @@
-/*
- * Copyright (C) 1999-2001 Affinix Software, LLC
- *
- * This file is part of Infinity.
- *
- * This file may be used under the terms of the Creative Commons Attribution-
- * NonCommercial-ShareAlike 4.0 International License as published by Creative
- * Commons.
- *
- * Alteratively, this file may be used under the terms of the GNU General
- * Public License as published by the Free Software Foundation, either version
- * 3 of the License, or (at your option) any later version.
- *
- * In addition, as a special exception, Affinix Software gives you certain
- * additional rights. These rights are described in the LICENSE file in this
- * package.
- */
 
-#include<stdio.h>
-#include<string.h>
-#include<memory.h>
-#include<malloc.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <malloc.h>
+#include <string.h>
 
 unsigned char *buf;
+unsigned char gbsheader[4] = { 'G','B','S',1};
 
-int find_deadbeef(unsigned char **addr, int size)
+int findGBSHeader(int offset)
 {
-   int n;
-   int warn_load = 0;
-   int warn_play = 0;
-   int warn_stack = 0;
-   
-   int load, init, play, stack;
-   
-   unsigned char *buf;
-   char str[4] = { 0x47, 0x42, 0x53, 0x01 };
-
-   buf = *addr;
-   for(n = 0; n < size - 5; ++n) {
-   	   load = buf[n+6] + (buf[n+7] << 8);
-   	   init = buf[n+8] + (buf[n+9] << 8);
-   	   play = buf[n+10] + (buf[n+11] << 8);
-   	   stack = buf[n+12] + (buf[n+13] << 8);
-   	   
-   	   warn_load = warn_play = 0;
-      if(!memcmp(buf + n, str, 4)) {
-      	  if(buf[n+5] > buf[n+4]) continue;	//First song exceeds number of songs, not permitted.
-      	  if ((stack < 0xC000) || (stack > 0xDFFF)) continue;	//Stack not in system ram
-      	  if (init < load) continue;	//Init address in undefined memory.
-      	  if (load >= 0x8000) continue;	//Load address NOT in rom space.
-      	  if (init >= 0x8000) continue;	//Init address NOT in rom space.
-      	  if (play < load)
-      	  {
-      	  	  if (play < 0x4000) continue;	//Play address is definitely in undefined memory.
-      	  	  warn_play = play;
-      	  }
-      	  if (load < 0x400) warn_load = load;
-      	  if (load >= 0x4000) warn_load = load;
-      	  if (play >= 0x8000) warn_play = play;
-      	  
-      	  
-      	  if (warn_load)
-      	  {
-      	  	  if (load < 0x400)
-      	  	  	  printf("Warning: Load address < 0x400; GBS won't be convertable to rom.\n");
-      	  	  else
-      	  	  	  printf("Warning: Load address NOT in bank 0\n");
-      	  }
-      	  if (warn_play)
-      	  {
-      	  	  if (play >= 0x8000)
-      	  	  	  printf("Warning: GBS play address located in RAM\n");
-      	  	  else
-      	  	  	  printf("Warning: Play address less than load address\n");
-      	  }
-         return n;
-      }
-   }
-   return 0;
+	int i;
+	for(i=offset;i<16384;i++)
+	{
+		if(!memcmp(&buf[i],gbsheader,4))
+			return i;
+	}
+	return -1;
 }
 
-void main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
-   FILE *f;
-   unsigned int total;
-   int total2;
-   unsigned char high, low;
-   int size, n, x, dest, len;
-   int addr;
+	FILE *f;
+	int size;
+	int i=-1;
+	int gbs_header_valid=0;
+	unsigned short load_addr,init_addr,play_addr,stack_pointer;
+	unsigned char song_count, first_song;
+	
+	if (argc < 3)
+	{
+		printf("Usage: %s [rom file] [gbs file]\n",argv[0]);
+		return 1;
+	}
+	f=fopen(argv[1],"rb");
+	if(f==NULL)
+	{
+		printf("Unable to open input rom file %s\n",argv[1]);
+		return 1;
+	}
+	fseek(f,0,SEEK_END);
+	size=ftell(f);
+	fseek(f,0,SEEK_SET);
+	buf=(unsigned char*)malloc(size);
+	if(buf==NULL)
+	{
+		printf("Unable to create buffer\n");
+		fclose(f);
+		return 1;
+	}
+	fread(buf,1,size,f);
+	fclose(f);
+	do
+	{
+		i=findGBSHeader(i+1);
+		if(i>=0)
+		{
+			song_count=buf[i+4];
+			first_song=buf[i+5];
+			if(first_song > song_count) continue;
+			
+			memcpy(&load_addr,&buf[i+6],2);
+			if(load_addr < (i+0x70)) continue;
+			if(load_addr >= 0x4000) continue;
+			
+			memcpy(&init_addr,&buf[i+8],2);
+			if(init_addr < load_addr) continue;
+			if(init_addr >= 0x8000) continue;
 
-   if(argc < 3)
-      exit(0);
-
-   f = fopen(argv[1], "r+b");
-   if(!f)
-      exit(0);
-   fseek(f, 0l, SEEK_END);
-   size = ftell(f);
-   buf = malloc(size);
-   if(!buf)
-      exit(0);
-   rewind(f);
-   fread(buf, size, 1, f);
-   fclose(f);
-   
-   f = fopen(argv[2],"wb");
-   addr = find_deadbeef(&buf,size);
-   printf("addr = %d\nsize = %d\nsize to be written = %d\n",addr,size,size-addr);
-   fwrite(buf + addr, 1, size-addr, f);
-   fclose(f);
-
-   printf("%s patched\n", argv[1]);
+			memcpy(&play_addr,&buf[i+10],2);
+			if(play_addr < load_addr) continue;
+			if(play_addr >= 0x8000) continue;
+			
+			memcpy(&stack_pointer,&buf[i+12],2);
+			if(stack_pointer<0x8000) continue;
+			
+			gbs_header_valid = 1;
+		}
+	} while (!gbs_header_valid && i >= 0);
+	if(!gbs_header_valid)
+	{
+		printf("Unable to find a valid GBS header within the rom\n");
+		return 1;
+	}
+	fopen(argv[2],"wb");
+	if(f==NULL)
+	{
+		printf("Unable to open output gbs file %s\n",argv[2]);
+		return 1;
+	}
+	fwrite(&buf[i],1,size-i,f);
+	fclose(f);
+	printf("GBS File %s written\n",argv[2]);
+	return 0;
 }
