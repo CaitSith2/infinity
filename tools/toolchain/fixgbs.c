@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
 			if(first_song > song_count) continue;
 			
 			memcpy(&load_addr,&buf[i+6],2);
-			if(load_addr < (i+0x70)) continue;
+			if(load_addr != (i+0x70)) continue;
 			if(load_addr >= 0x4000) continue;
 			
 			memcpy(&init_addr,&buf[i+8],2);
