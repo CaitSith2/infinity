@@ -7,6 +7,7 @@
 [MSG_EDGE   :Ryan: Well, boss, it looks like we've reached uncharted waters.  I'm turning back.]
 
 [MSG_END    :End of preview. Thanks for playing! (C) 1999-2016 Affinix Software.]
+[MSG_RISK   :End of preview. Proceed beyond this point at your own risk. If not, Thanks for playing! (C) 1999-2016 Affinix Software.]
 
 [INN_DTXT1  :Welcome to the traveler's inn!]
 [INN_DTXT2  :It is 15 aurum per night.|Would you like a room?]
