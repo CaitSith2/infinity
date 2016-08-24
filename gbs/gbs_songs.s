@@ -51,8 +51,6 @@ Song_Table_Begin:
 .DB   0x0D,1         ; 15 - forest
 .DB   0x0F,2         ; 13 - town 2
 .DB   0x10,0         ; 16 - alutha
-;Alutha (old) was removed by request of Eric Hache. Don't ask me where to get it.
-;(hint), look backwards in the gbs branch history.
 .DB   0x0A,0         ; 12 - creator evil
 .DB   0x06,0         ; 18 - trouble
 .DB   0x0A,1         ; 22 - icecavern

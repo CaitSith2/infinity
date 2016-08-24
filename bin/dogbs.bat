@@ -26,8 +26,6 @@ inspage infinity-gbc_gbs.gb ..\resource\audio12.bin 14
 inspage infinity-gbc_gbs.gb ..\resource\audio13.bin 15
 inspage infinity-gbc_gbs.gb ..\resource\audio14.bin 16
 inspage infinity-gbc_gbs.gb ..\resource\audio15.bin 17
-rem Alutha (old) was removed by request of Eric Hache. Don't ask me where to get it. (Hint, it did once exist on a much older gbs release that tssf had me do.)
-rem inspage infinity-gbc_gbs.gb ..\gbs\audio14.bin 18
 fixgb infinity-gbc_gbs.gb "INFINITY GBS"
 fixgbs infinity-gbc_gbs.gb infinity-gbc.gbs
 copy /Y ..\gbs\infinity-gbc.m3u .
