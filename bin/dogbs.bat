@@ -5,28 +5,15 @@ if not exist %MAKE%\NUL mkdir %MAKE%
 
 set CUR_DIR=%CD%
 cd /d %MAKE%
+cd ..\GBS
+tasm -b -69 -fff -Q gbsplay.asm
+cd /d %MAKE%
 
-lcc -c ..\gbs\gbs_songs.s
-lcc -c ..\gbs\gbs.c
-lcc -Wl-yo32 -o infinity-gbc_gbs.gb gbs_songs.o gbs.o
-inspage infinity-gbc_gbs.gb ..\resource\audio1o.bin 2
-inspage infinity-gbc_gbs.gb ..\resource\audio2o.bin 1
-inspage infinity-gbc_gbs.gb ..\resource\audio1.bin 3
-inspage infinity-gbc_gbs.gb ..\resource\audio2.bin 4
-inspage infinity-gbc_gbs.gb ..\resource\audio3.bin 5
-inspage infinity-gbc_gbs.gb ..\resource\audio4.bin 6
-inspage infinity-gbc_gbs.gb ..\resource\audio5.bin 7
-inspage infinity-gbc_gbs.gb ..\resource\audio6.bin 8
-inspage infinity-gbc_gbs.gb ..\resource\audio7.bin 9
-inspage infinity-gbc_gbs.gb ..\resource\audio8.bin 10
-inspage infinity-gbc_gbs.gb ..\resource\audio9.bin 11
-inspage infinity-gbc_gbs.gb ..\resource\audio10.bin 12
-inspage infinity-gbc_gbs.gb ..\resource\audio11.bin 13
-inspage infinity-gbc_gbs.gb ..\resource\audio12.bin 14
-inspage infinity-gbc_gbs.gb ..\resource\audio13.bin 15
-inspage infinity-gbc_gbs.gb ..\resource\audio14.bin 16
-inspage infinity-gbc_gbs.gb ..\resource\audio15.bin 17
-fixgb infinity-gbc_gbs.gb "INFINITY GBS"
+
+copy /Y /b ..\gbs\gbsplay.obj + ..\resource\audio2o.bin + ..\resource\audio1o.bin + ..\resource\audio1.bin + ..\resource\audio2.bin + ..\resource\audio3.bin + ..\resource\audio4.bin + ..\resource\audio5.bin + ..\resource\audio6.bin + ..\resource\audio7.bin + ..\resource\audio8.bin + ..\resource\audio9.bin + ..\resource\audio10.bin + ..\resource\audio11.bin + ..\resource\audio12.bin + ..\resource\audio13.bin + ..\resource\audio14.bin + ..\resource\audio15.bin + ..\gbs\blank.bin + ..\gbs\blank.bin + ..\gbs\blank.bin + ..\gbs\blank.bin + ..\gbs\blank.bin + ..\gbs\blank.bin + ..\gbs\blank.bin + ..\gbs\blank.bin + ..\gbs\blank.bin + ..\gbs\blank.bin + ..\gbs\blank.bin + ..\gbs\blank.bin + ..\gbs\blank.bin + ..\gbs\blank.bin infinity-gbc_gbs.gb
+fixgb infinity-gbc_gbs.gb "INFINITY GBS   "
 fixgbs infinity-gbc_gbs.gb infinity-gbc.gbs
 copy /Y ..\gbs\infinity-gbc.m3u .
+cd ..\GBS
+del gbsplay.obj
 cd /d %CUR_DIR%

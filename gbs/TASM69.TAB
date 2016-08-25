@@ -1,0 +1,569 @@
+"TASM GameBoy Assembler.     "
+/****************************************************************************
+/* $Id: tasm69.tab 1.6 1998/1/1 $
+/****************************************************************************
+/* This is the instruction set definition table
+/*   for the GameBoy version of TASM.
+/*      Thomas N. Anderson, Speech Technology Incorporated
+/*
+/*  See TASM manual for info on table structure.
+/*
+/* Revision History
+/* 1.0 - Original
+/* 1.1 - Added SWAP command.
+/* 1.2 - Added GB instructions:
+/*        SWAP (HL)	SBC A,*		ADD SP,*
+/*       Added Macro instructions:
+/*        DJNZ *	IN A,(C)	IN A,(*)
+/*	  EX AF,BC	EX AF,DE	EX AF,HL
+/*	  EX BC,DE	EX BC,HL	EX DE,HL
+/*	  LD BC,(HL)	LD DE,(HL)	LD HL,(HL)
+/*	  LDD
+/*	  LDD A,(BC)	LDD (BC),A	LDD A,(DE)	LDD (DE),A
+/*	  LDI
+/*	  LDI A,(BC)	LDI (BC),A	LDI A,(DE)	LDI (DE),A
+/*	  NEG		OUT (*),A	POP ALL		POP NULL
+/*	  PUSH ALL
+/* 1.3 - Added GB instructions:
+/*        LDH A,(C)	LDH (C),A
+/* 1.4 - Speeded up following Macros:
+/*        EX BC,DE      EX BC,HL        EX DE,HL
+/* 1.5 - LDI & LDD commands in (+) & (-) format as well
+/*        LD A,(HL+)    LD a,(HL-)      etc
+/* 1.6 - Added support for [] in addition to ()
+/*       Changed from 'LD SP,(HL+*)' to 'LD SP,HL+*' format.
+/*
+/*INSTR ARGS OP BYTES RULE CLASS SHIFT OR */
+/*-------------------------------------------*/
+
+ADC  A,(HL)  8E   1 NOP 1
+ADC  A,[HL]  8E   1 NOP 1
+ADC  A,A     8F   1 NOP 1
+ADC  A,B     88   1 NOP 1
+ADC  A,C     89   1 NOP 1
+ADC  A,D     8A   1 NOP 1
+ADC  A,E     8B   1 NOP 1
+ADC  A,H     8C   1 NOP 1
+ADC  A,L     8D   1 NOP 1
+ADC  A,*     CE   2 NOP 1
+
+ADD  A,(HL)  86   1 NOP 1
+ADD  A,[HL]  86   1 NOP 1
+ADD  A,A     87   1 NOP 1
+ADD  A,B     80   1 NOP 1
+ADD  A,C     81   1 NOP 1
+ADD  A,D     82   1 NOP 1
+ADD  A,E     83   1 NOP 1
+ADD  A,H     84   1 NOP 1
+ADD  A,L     85   1 NOP 1
+ADD  A,*     C6   2 NOP 1
+ADD  HL,BC   09   1 NOP 1
+ADD  HL,DE   19   1 NOP 1
+ADD  HL,HL   29   1 NOP 1
+ADD  HL,SP   39   1 NOP 1
+ADD  SP,*    E8   2 NOP 1
+
+AND  (HL)    A6   1 NOP 1
+AND  [HL]    A6   1 NOP 1
+AND  A       A7   1 NOP 1
+AND  B       A0   1 NOP 1
+AND  C       A1   1 NOP 1
+AND  D       A2   1 NOP 1
+AND  E       A3   1 NOP 1
+AND  H       A4   1 NOP 1
+AND  L       A5   1 NOP 1
+AND  *       E6   2 NOP 1
+
+BIT  *,(HL)  46CB 2 ZBIT 1
+BIT  *,[HL]  46CB 2 ZBIT 1
+BIT  *,A     47CB 2 ZBIT 1
+BIT  *,B     40CB 2 ZBIT 1
+BIT  *,C     41CB 2 ZBIT 1
+BIT  *,D     42CB 2 ZBIT 1
+BIT  *,E     43CB 2 ZBIT 1
+BIT  *,H     44CB 2 ZBIT 1
+BIT  *,L     45CB 2 ZBIT 1
+
+CALL C,*     DC   3 NOP 1
+CALL NC,*    D4   3 NOP 1
+CALL NZ,*    C4   3 NOP 1
+CALL Z,*     CC   3 NOP 1
+CALL *       CD   3 NOP 1
+
+CCF  ""      3F   1 NOP 1
+
+CP   (HL)    BE   1 NOP 1
+CP   [HL]    BE   1 NOP 1
+CP   A       BF   1 NOP 1
+CP   B       B8   1 NOP 1
+CP   C       B9   1 NOP 1
+CP   D       BA   1 NOP 1
+CP   E       BB   1 NOP 1
+CP   H       BC   1 NOP 1
+CP   L       BD   1 NOP 1
+CP   *       FE   2 NOP 1
+CPL  ""      2F   1 NOP 1
+
+DAA  ""      27   1 NOP 1
+
+DEC  (HL)    35   1 NOP 1
+DEC  [HL]    35   1 NOP 1
+DEC  A       3D   1 NOP 1
+DEC  B       05   1 NOP 1
+DEC  BC      0B   1 NOP 1
+DEC  C       0D   1 NOP 1
+DEC  D       15   1 NOP 1
+DEC  DE      1B   1 NOP 1
+DEC  E       1D   1 NOP 1
+DEC  H       25   1 NOP 1
+DEC  HL      2B   1 NOP 1
+DEC  L       2D   1 NOP 1
+DEC  SP      3B   1 NOP 1
+
+DI   ""      F3   1 NOP 1
+
+DJNZ *       2005 2 R1  1
+
+EI   ""      FB   1 NOP 1
+
+EX   AF,BC   C1F1C5F5 4 NOP 1	/* PUSH AF|PUSH BC|POP AF|POP BC */
+EX   AF,DE   D1F1D5F5 4 NOP 1	/* PUSH AF|PUSH DE|POP AF|POP DE */
+EX   AF,HL   E1F1E5F5 4 NOP 1	/* PUSH AF|PUSH HL|POP AF|POP HL */
+EX   BC,DE   D1424BC5 4 NOP 1   /* PUSH BC|LD C,E|LD B,D|POP DE */
+EX   BC,HL   E1444DC5 4 NOP 1   /* PUSH BC|LD C,L|LD B,H|POP HL */
+EX   DE,HL   E1545DD5 4 NOP 1   /* PUSH DE|LD E,L|LD D,H|POP HL */
+
+HALT ""      76   1 NOP 1
+
+IN   A,(C)   F2   1 NOP 1
+IN   A,[C]   F2   1 NOP 1
+IN   A,(*)   F0   2 NOP 1
+IN   A,[*]   F0   2 NOP 1
+
+INC  (HL)    34   1 NOP 1
+INC  [HL]    34   1 NOP 1
+INC  A       3C   1 NOP 1
+INC  B       04   1 NOP 1
+INC  BC      03   1 NOP 1
+INC  C       0C   1 NOP 1
+INC  D       14   1 NOP 1
+INC  DE      13   1 NOP 1
+INC  E       1C   1 NOP 1
+INC  H       24   1 NOP 1
+INC  HL      23   1 NOP 1
+INC  L       2C   1 NOP 1
+INC  SP      33   1 NOP 1
+
+JP   (HL)    E9   1 NOP 1
+JP   [HL]    E9   1 NOP 1
+JP   C,*     DA   3 NOP 1
+JP   NC,*    D2   3 NOP 1
+JP   NZ,*    C2   3 NOP 1
+JP   Z,*     CA   3 NOP 1
+JP   *       C3   3 NOP 1
+
+JR   C,*     38   2 R1  1
+JR   NC,*    30   2 R1  1
+JR   NZ,*    20   2 R1  1
+JR   Z,*     28   2 R1  1
+JR   *       18   2 R1  1
+
+LD  ($FF00+C),A   E2   1 NOP 1
+LD  [$FF00+C],A   E2   1 NOP 1
+LD  ($FF00+*),A   E0   2 NOP 1
+LD  [$FF00+*],A   E0   2 NOP 1
+LD  A,($FF00+*)   F0   2 NOP 1
+LD  A,[$FF00+*]   F0   2 NOP 1
+
+LD   (C),A   E2   1 NOP 1	/*   LD ($FF00+C),A   */
+LD   [C],A   E2   1 NOP 1       /*   LD ($FF00+C),A   */
+LD   (BC),A  02   1 NOP 1
+LD   [BC],A  02   1 NOP 1
+LD   (DE),A  12   1 NOP 1
+LD   [DE],A  12   1 NOP 1
+LD   (HL),A  77   1 NOP 1
+LD   [HL],A  77   1 NOP 1
+LD   (HL),B  70   1 NOP 1
+LD   [HL],B  70   1 NOP 1
+LD   (HL),C  71   1 NOP 1
+LD   [HL],C  71   1 NOP 1
+LD   (HL),D  72   1 NOP 1
+LD   [HL],D  72   1 NOP 1
+LD   (HL),E  73   1 NOP 1
+LD   [HL],E  73   1 NOP 1
+LD   (HL),H  74   1 NOP 1
+LD   [HL],H  74   1 NOP 1
+LD   (HL),L  75   1 NOP 1
+LD   [HL],L  75   1 NOP 1
+LD   (HL),*  36   2 NOP 1
+LD   [HL],*  36   2 NOP 1
+LD   (HLD),A 32   1 NOP 1	/*  LD (HL),A - DEC HL  */
+LD   [HLD],A 32   1 NOP 1       /*  LD (HL),A - DEC HL  */
+LD   (HLI),A 22   1 NOP 1	/*  LD (HL),A - INC HL  */
+LD   [HLI],A 22   1 NOP 1       /*  LD (HL),A - INC HL  */
+LD   (*),A   EA   3 NOP 1
+LD   [*],A   EA   3 NOP 1
+LD   (*),SP  08   3 NOP 1
+LD   [*],SP  08   3 NOP 1
+LD   A,(C)   F2   1 NOP 1	/*    LD A,($FF00+C)    */
+LD   A,[C]   F2   1 NOP 1       /*    LD A,($FF00+C)    */
+LD   A,(BC)  0A   1 NOP 1
+LD   A,[BC]  0A   1 NOP 1
+LD   A,(DE)  1A   1 NOP 1
+LD   A,[DE]  1A   1 NOP 1
+LD   A,(HL)  7E   1 NOP 1
+LD   A,[HL]  7E   1 NOP 1
+LD   A,(HLD) 3A   1 NOP 1	/*  LD A,(HL) - DEC HL  */
+LD   A,[HLD] 3A   1 NOP 1       /*  LD A,(HL) - DEC HL  */
+LD   A,(HLI) 2A   1 NOP 1	/*  LD A,(HL) - INC HL  */
+LD   A,[HLI] 2A   1 NOP 1       /*  LD A,(HL) - INC HL  */
+LD   A,A     7F   1 NOP 1
+LD   A,B     78   1 NOP 1
+LD   A,C     79   1 NOP 1
+LD   A,D     7A   1 NOP 1
+LD   A,E     7B   1 NOP 1
+LD   A,H     7C   1 NOP 1
+LD   A,L     7D   1 NOP 1
+LD   A,(*)   FA   3 NOP 1
+LD   A,[*]   FA   3 NOP 1
+LD   A,*     3E   2 NOP 1
+LD   B,(HL)  46   1 NOP 1
+LD   B,[HL]  46   1 NOP 1
+LD   B,A     47   1 NOP 1
+LD   B,B     40   1 NOP 1
+LD   B,C     41   1 NOP 1
+LD   B,D     42   1 NOP 1
+LD   B,E     43   1 NOP 1
+LD   B,H     44   1 NOP 1
+LD   B,L     45   1 NOP 1
+LD   B,*     06   2 NOP 1
+LD   BC,*    01   3 NOP 1
+LD   C,(HL)  4E   1 NOP 1
+LD   C,[HL]  4E   1 NOP 1
+LD   C,A     4F   1 NOP 1
+LD   C,B     48   1 NOP 1
+LD   C,C     49   1 NOP 1
+LD   C,D     4A   1 NOP 1
+LD   C,E     4B   1 NOP 1
+LD   C,H     4C   1 NOP 1
+LD   C,L     4D   1 NOP 1
+LD   C,*     0E   2 NOP 1
+LD   D,(HL)  56   1 NOP 1
+LD   D,[HL]  56   1 NOP 1
+LD   D,A     57   1 NOP 1
+LD   D,B     50   1 NOP 1
+LD   D,C     51   1 NOP 1
+LD   D,D     52   1 NOP 1
+LD   D,E     53   1 NOP 1
+LD   D,H     54   1 NOP 1
+LD   D,L     55   1 NOP 1
+LD   D,*     16   2 NOP 1
+LD   DE,*    11   3 NOP 1
+LD   E,(HL)  5E   1 NOP 1
+LD   E,[HL]  5E   1 NOP 1
+LD   E,A     5F   1 NOP 1
+LD   E,B     58   1 NOP 1
+LD   E,C     59   1 NOP 1
+LD   E,D     5A   1 NOP 1
+LD   E,E     5B   1 NOP 1
+LD   E,H     5C   1 NOP 1
+LD   E,L     5D   1 NOP 1
+LD   E,*     1E   2 NOP 1
+LD   H,(HL)  66   1 NOP 1
+LD   H,[HL]  66   1 NOP 1
+LD   H,A     67   1 NOP 1
+LD   H,B     60   1 NOP 1
+LD   H,C     61   1 NOP 1
+LD   H,D     62   1 NOP 1
+LD   H,E     63   1 NOP 1
+LD   H,H     64   1 NOP 1
+LD   H,L     65   1 NOP 1
+LD   H,*     26   2 NOP 1
+LD   HL,SP*  F8   2 ZIX 1       /*  LD HL,(SP+signed offset)  */
+LD   A,A     7F   1 NOP 1
+LD   BC,(HL) 2B4F462A 4 NOP 1	/*  LDI A,(HL)|LD B,(HL)|LD C,A|DEC HL */
+LD   BC,[HL] 2B4F462A 4 NOP 1   /*  LDI A,(HL)|LD B,(HL)|LD C,A|DEC HL */
+LD   DE,(HL) 2B5F662A 4 NOP 1	/*  LDI A,(HL)|LD D,(HL)|LD E,A|DEC HL */
+LD   DE,[HL] 2B5F662A 4 NOP 1   /*  LDI A,(HL)|LD D,(HL)|LD E,A|DEC HL */
+LD   HL,(HL) 6F662A 3 NOP 1	/*  LDI A,(HL)|LD H,(HL)|LD L,A */
+LD   HL,[HL] 6F662A 3 NOP 1     /*  LDI A,(HL)|LD H,(HL)|LD L,A */
+LD   HL,*    21   3 NOP 1
+LD   L,(HL)  6E   1 NOP 1
+LD   L,[HL]  6E   1 NOP 1
+LD   L,A     6F   1 NOP 1
+LD   L,B     68   1 NOP 1
+LD   L,C     69   1 NOP 1
+LD   L,D     6A   1 NOP 1
+LD   L,E     6B   1 NOP 1
+LD   L,H     6C   1 NOP 1
+LD   L,L     6D   1 NOP 1
+LD   L,*     2E   2 NOP 1
+LD   SP,HL   F9   1 NOP 1
+LD   SP,*    31   3 NOP 1
+LD   (*),SP  08   3 NOP 1
+LD   [*],SP  08   3 NOP 1
+
+LD  A,(BC+)  030A 2 NOP 1       /*  LD A,(BC) - INC BC  */
+LD  A,[BC+]  030A 2 NOP 1       /*  LD A,(BC) - INC BC  */
+LD  (BC+),A  0302 2 NOP 1       /*  LD (BC),A - INC BC  */
+LD  [BC+],A  0302 2 NOP 1       /*  LD (BC),A - INC BC  */
+LD  A,(DE+)  131A 2 NOP 1       /*  LD A,(DE) - INC DE  */
+LD  A,[DE+]  131A 2 NOP 1       /*  LD A,(DE) - INC DE  */
+LD  (DE+),A  1312 2 NOP 1       /*  LD (DE),A - INC DE  */
+LD  [DE+],A  1312 2 NOP 1       /*  LD (DE),A - INC DE  */
+LD  A,(HL+)  2A   1 NOP 1       /*  LD A,(HL) - INC HL  */
+LD  A,[HL+]  2A   1 NOP 1       /*  LD A,(HL) - INC HL  */
+LD  (HL+),A  22   1 NOP 1       /*  LD (HL),A - INC HL  */
+LD  [HL+],A  22   1 NOP 1       /*  LD (HL),A - INC HL  */
+
+LD   A,(BC-) 0B0A 2 NOP 1       /*  LD A,(BC) - DEC BC  */
+LD   A,[BC-] 0B0A 2 NOP 1       /*  LD A,(BC) - DEC BC  */
+LD   (BC-),A 0B02 2 NOP 1       /*  LD (BC),A - DEC BC  */
+LD   [BC-],A 0B02 2 NOP 1       /*  LD (BC),A - DEC BC  */
+LD   A,(DE-) 1B1A 2 NOP 1       /*  LD A,(DE) - DEC DE  */
+LD   A,[DE-] 1B1A 2 NOP 1       /*  LD A,(DE) - DEC DE  */
+LD   (DE-),A 1B12 2 NOP 1       /*  LD (DE),A - DEC DE  */
+LD   [DE-],A 1B12 2 NOP 1       /*  LD (DE),A - DEC DE  */
+LD   A,(HL-) 3A   1 NOP 1       /*  LD A,(HL) - DEC HL  */
+LD   A,[HL-] 3A   1 NOP 1       /*  LD A,(HL) - DEC HL  */
+LD   (HL-),A 32   1 NOP 1       /*  LD (HL),A - DEC HL  */
+LD   [HL-],A 32   1 NOP 1       /*  LD (HL),A - DEC HL  */
+
+LDD  ""      1B123A 3 NOP 1	/*  LDD A,(HL)|LD (DE),A|DEC DE  */
+
+LDD  A,(BC)  0B0A 2 NOP 1       /*  LD A,(BC) - DEC BC  */
+LDD  A,[BC]  0B0A 2 NOP 1       /*  LD A,(BC) - DEC BC  */
+LDD  (BC),A  0B02 2 NOP 1	/*  LD (BC),A - DEC BC  */
+LDD  [BC],A  0B02 2 NOP 1       /*  LD (BC),A - DEC BC  */
+LDD  A,(DE)  1B1A 2 NOP 1	/*  LD A,(DE) - DEC DE  */
+LDD  A,[DE]  1B1A 2 NOP 1       /*  LD A,(DE) - DEC DE  */
+LDD  (DE),A  1B12 2 NOP 1	/*  LD (DE),A - DEC DE  */
+LDD  [DE],A  1B12 2 NOP 1       /*  LD (DE),A - DEC DE  */
+LDD  A,(HL)  3A   1 NOP 1	/*  LD A,(HL) - DEC HL  */
+LDD  A,[HL]  3A   1 NOP 1       /*  LD A,(HL) - DEC HL  */
+LDD  (HL),A  32   1 NOP 1	/*  LD (HL),A - DEC HL  */
+LDD  [HL],A  32   1 NOP 1       /*  LD (HL),A - DEC HL  */
+
+LDH  (C),A   E2   1 NOP 1	/*   LD ($FF00+C),A   */
+LDH  [C],A   E2   1 NOP 1       /*   LD ($FF00+C),A   */
+LDH  A,(C)   F2   1 NOP 1	/*   LD A,($FF00+C)   */
+LDH  A,[C]   F2   1 NOP 1       /*   LD A,($FF00+C)   */
+LDH  (*),A   E0   2 NOP 1	/*   LD ($FF00+*),A   */
+LDH  [*],A   E0   2 NOP 1       /*   LD ($FF00+*),A   */
+LDH  A,(*)   F0   2 NOP 1	/*   LD A,($FF00+*)   */
+LDH  A,[*]   F0   2 NOP 1       /*   LD A,($FF00+*)   */
+
+LDHL SP,*    F8   2 ZIX 1	/* LD HL,(SP+signed offset) */
+
+LDI  ""      13122A 3 NOP 1	/*  LDI A,(HL)|LD (DE),A|INC DE  */
+
+LDI  A,(BC)  030A 2 NOP 1	/*  LD A,(BC) - INC BC  */
+LDI  A,[BC]  030A 2 NOP 1       /*  LD A,(BC) - INC BC  */
+LDI  (BC),A  0302 2 NOP 1	/*  LD (BC),A - INC BC  */
+LDI  [BC],A  0302 2 NOP 1       /*  LD (BC),A - INC BC  */
+LDI  A,(DE)  131A 2 NOP 1	/*  LD A,(DE) - INC DE  */
+LDI  A,[DE]  131A 2 NOP 1       /*  LD A,(DE) - INC DE  */
+LDI  (DE),A  1312 2 NOP 1	/*  LD (DE),A - INC DE  */
+LDI  [DE],A  1312 2 NOP 1       /*  LD (DE),A - INC DE  */
+LDI  A,(HL)  2A   1 NOP 1	/*  LD A,(HL) - INC HL  */
+LDI  A,[HL]  2A   1 NOP 1       /*  LD A,(HL) - INC HL  */
+LDI  (HL),A  22   1 NOP 1	/*  LD (HL),A - INC HL  */
+LDI  [HL],A  22   1 NOP 1       /*  LD (HL),A - INC HL  */
+
+NEG  ""      3C2F 2 NOP 1
+
+NOP  ""      00   1 NOP 1
+
+OR   (HL)    B6   1 NOP 1
+OR   [HL]    B6   1 NOP 1
+OR   A       B7   1 NOP 1
+OR   B       B0   1 NOP 1
+OR   C       B1   1 NOP 1
+OR   D       B2   1 NOP 1
+OR   E       B3   1 NOP 1
+OR   H       B4   1 NOP 1
+OR   L       B5   1 NOP 1
+OR   *       F6   2 NOP 1
+
+OUT  (*),A   E0   2 NOP 1
+OUT  [*],A   E0   2 NOP 1
+
+POP  AF      F1   1 NOP 1
+POP  ALL F1C1D1E1 4 NOP 1	/* POP HL|POP DE|POP BC|POP AF */
+POP  BC      C1   1 NOP 1
+POP  DE      D1   1 NOP 1
+POP  HL      E1   1 NOP 1
+POP  NULL    02E8 2 NOP 1	/* ADD SP,2 */
+
+PUSH AF      F5   1 NOP 1
+PUSH ALL E5D5C5F5 4 NOP 1	/* PUSH AF|PUSH BC|PUSH DE|PUSH HL */
+PUSH BC      C5   1 NOP 1
+PUSH DE      D5   1 NOP 1
+PUSH HL      E5   1 NOP 1
+
+RES  *,(HL)  86CB 2 ZBIT 1
+RES  *,[HL]  86CB 2 ZBIT 1
+RES  *,A     87CB 2 ZBIT 1
+RES  *,B     80CB 2 ZBIT 1
+RES  *,C     81CB 2 ZBIT 1
+RES  *,D     82CB 2 ZBIT 1
+RES  *,E     83CB 2 ZBIT 1
+RES  *,H     84CB 2 ZBIT 1
+RES  *,L     85CB 2 ZBIT 1
+
+RET  ""      C9   1 NOP 1
+RET  C       D8   1 NOP 1
+RET  NC      D0   1 NOP 1
+RET  NZ      C0   1 NOP 1
+RET  Z       C8   1 NOP 1
+RETI ""      D9   1 NOP 1
+
+RL   (HL)    16CB 2 NOP 1
+RL   [HL]    16CB 2 NOP 1
+RL   A       17CB 2 NOP 1
+RL   B       10CB 2 NOP 1
+RL   C       11CB 2 NOP 1
+RL   D       12CB 2 NOP 1
+RL   E       13CB 2 NOP 1
+RL   H       14CB 2 NOP 1
+RL   L       15CB 2 NOP 1
+RLA  ""      17   1 NOP 1
+
+RLC  (HL)    06CB 2 NOP 1
+RLC  [HL]    06CB 2 NOP 1
+RLC  A       07CB 2 NOP 1
+RLC  B       00CB 2 NOP 1
+RLC  C       01CB 2 NOP 1
+RLC  D       02CB 2 NOP 1
+RLC  E       03CB 2 NOP 1
+RLC  H       04CB 2 NOP 1
+RLC  L       05CB 2 NOP 1
+RLCA ""      07   1 NOP 1
+
+RR   (HL)    1ECB 2 NOP 1
+RR   [HL]    1ECB 2 NOP 1
+RR   A       1FCB 2 NOP 1
+RR   B       18CB 2 NOP 1
+RR   C       19CB 2 NOP 1
+RR   D       1ACB 2 NOP 1
+RR   E       1BCB 2 NOP 1
+RR   H       1CCB 2 NOP 1
+RR   L       1DCB 2 NOP 1
+RRA  ""      1F   1 NOP 1
+
+RRC  (HL)    0ECB 2 NOP 1
+RRC  [HL]    0ECB 2 NOP 1
+RRC  A       0FCB 2 NOP 1
+RRC  B       08CB 2 NOP 1
+RRC  C       09CB 2 NOP 1
+RRC  D       0ACB 2 NOP 1
+RRC  E       0BCB 2 NOP 1
+RRC  H       0CCB 2 NOP 1
+RRC  L       0DCB 2 NOP 1
+RRCA ""      0F   1 NOP 1
+
+RST  00H     C7   1 NOP 1
+RST  08H     CF   1 NOP 1
+RST  10H     D7   1 NOP 1
+RST  18H     DF   1 NOP 1
+RST  20H     E7   1 NOP 1
+RST  28H     EF   1 NOP 1
+RST  30H     F7   1 NOP 1
+RST  38H     FF   1 NOP 1
+RST  $10     D7   1 NOP 1
+RST  $18     DF   1 NOP 1
+RST  $20     E7   1 NOP 1
+RST  $28     EF   1 NOP 1
+RST  $30     F7   1 NOP 1
+RST  $38     FF   1 NOP 1
+RST  0       C7   1 NOP 1
+RST  8       CF   1 NOP 1
+
+SBC  A,(HL)  9E   1 NOP 1
+SBC  A,[HL]  9E   1 NOP 1
+SBC  A,A     9F   1 NOP 1
+SBC  A,B     98   1 NOP 1
+SBC  A,C     99   1 NOP 1
+SBC  A,D     9A   1 NOP 1
+SBC  A,E     9B   1 NOP 1
+SBC  A,H     9C   1 NOP 1
+SBC  A,L     9D   1 NOP 1
+SBC  A,*     DE   2 NOP 1
+
+SCF  ""      37   1 NOP 1
+
+SET  *,(HL)  C6CB 2 ZBIT 1
+SET  *,[HL]  C6CB 2 ZBIT 1
+SET  *,A     C7CB 2 ZBIT 1
+SET  *,B     C0CB 2 ZBIT 1
+SET  *,C     C1CB 2 ZBIT 1
+SET  *,D     C2CB 2 ZBIT 1
+SET  *,E     C3CB 2 ZBIT 1
+SET  *,H     C4CB 2 ZBIT 1
+SET  *,L     C5CB 2 ZBIT 1
+
+SLA  (HL)    26CB 2 NOP 1
+SLA  [HL]    26CB 2 NOP 1
+SLA  A       27CB 2 NOP 1
+SLA  B       20CB 2 NOP 1
+SLA  C       21CB 2 NOP 1
+SLA  D       22CB 2 NOP 1
+SLA  E       23CB 2 NOP 1
+SLA  H       24CB 2 NOP 1
+SLA  L       25CB 2 NOP 1
+
+SRA  (HL)    2ECB 2 NOP 1
+SRA  [HL]    2ECB 2 NOP 1
+SRA  A       2FCB 2 NOP 1
+SRA  B       28CB 2 NOP 1
+SRA  C       29CB 2 NOP 1
+SRA  D       2ACB 2 NOP 1
+SRA  E       2BCB 2 NOP 1
+SRA  H       2CCB 2 NOP 1
+SRA  L       2DCB 2 NOP 1
+
+SRL  (HL)    3ECB 2 NOP 1
+SRL  [HL]    3ECB 2 NOP 1
+SRL  A       3FCB 2 NOP 1
+SRL  B       38CB 2 NOP 1
+SRL  C       39CB 2 NOP 1
+SRL  D       3ACB 2 NOP 1
+SRL  E       3BCB 2 NOP 1
+SRL  H       3CCB 2 NOP 1
+SRL  L       3DCB 2 NOP 1
+
+STOP ""      0010 2 NOP 1	/* like halt? */
+
+SUB  (HL)    96   1 NOP 1
+SUB  [HL]    96   1 NOP 1
+SUB  A       97   1 NOP 1
+SUB  B       90   1 NOP 1
+SUB  C       91   1 NOP 1
+SUB  D       92   1 NOP 1
+SUB  E       93   1 NOP 1
+SUB  H       94   1 NOP 1
+SUB  L       95   1 NOP 1
+SUB  *       D6   2 NOP 1
+
+SWAP (HL)    36CB 2 NOP 1
+SWAP [HL]    36CB 2 NOP 1
+SWAP A       37CB 2 NOP 1
+SWAP B       30CB 2 NOP 1
+SWAP C       31CB 2 NOP 1
+SWAP D       32CB 2 NOP 1
+SWAP E       33CB 2 NOP 1
+SWAP H       34CB 2 NOP 1
+SWAP L       35CB 2 NOP 1
+
+XOR  (HL)    AE   1 NOP 1
+XOR  [HL]    AE   1 NOP 1
+XOR  A       AF   1 NOP 1
+XOR  B       A8   1 NOP 1
+XOR  C       A9   1 NOP 1
+XOR  D       AA   1 NOP 1
+XOR  E       AB   1 NOP 1
+XOR  H       AC   1 NOP 1
+XOR  L       AD   1 NOP 1
+XOR  *       EE   2 NOP 1
+
+
