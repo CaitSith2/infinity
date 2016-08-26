@@ -3,7 +3,7 @@
 ; An emulator/hardware GBS file player
 ; By Scott Worley <ripsaw8080@hotmail.com>
 ; Edit by ugetab
-; Edit
+; Heavily modified by CaitSith2 for the Infinity GBC soundtrack
 ;
 ; Note about interrupt coding:
 ;  The GBS' TAC should have bits 2 and 6 enabled (0x44)
@@ -63,29 +63,29 @@ Origin  .equ    $0150
 
         .org    $00
         jp      load+$00        ; RST 00
-        .dw     title
-        .dw     $9844
-        .db		$10
+        .dw		$0000
+        .dw		$0000
+        .db		$00
 
         jp      load+$08        ; RST 08
-        .dw     author
-        .dw     $9885
-        .db		$10
+        .dw		$0000
+        .dw		$0000
+        .db		$00
 
         jp      load+$10        ; RST 10
-        .dw     copyr
-        .dw     $98c2
-        .db		$11
+        .dw		$0000
+        .dw		$0000
+        .db		$00
 
         jp      load+$18        ; RST 18
-        .dw     copyr+$12
-        .dw     $98e4
-        .db		$0F
+        .dw		$0000
+        .dw		$0000
+        .db		$00
 
         jp      load+$20        ; RST 20
-        .dw     smess
-        .dw     $99e9
-        .db		$10
+        .dw		$0000
+        .dw		$0000
+        .db		$00
 
         jp      load+$28        ; RST 28
         .dw		$0000
@@ -140,7 +140,7 @@ vbwait: ldh     a,($44)
 
 ; subroutine to display a 16-byte character string
 
-text:   call    vbwait
+text:   ;call    vbwait
 tloop:  ld      a,(de)
         and     $7f             ; return on zero or bad char
         ret     z
@@ -302,11 +302,12 @@ name:   .db     "INFINITY GBS   " ; cart name   15 chars
         .db     $01             ; country       non-japan
         .db     $33             ; old licensee  see new licensee
         .db     $02             ; version
-        .db     $00             ; complement
+        .db     $BC             ; complement
         .dw     $0000           ; checksum
 
 ; start procedure
         .org    Origin          ; See start of file.
+        
 
 start:  di                      ; disable interrupts
 
@@ -322,28 +323,28 @@ start:  di                      ; disable interrupts
 
 ; display information on screen according to table data
 
-        ld      hl,$0003        ; start of table
-disp:   ldi     a,(hl)
-        ld      e,a
-        ldi     a,(hl)          ; get table values into registers
-        ld      d,a
-        or      e
-        jr      z,xtext         ; zero marks end of table
-        ldi     a,(hl)
-        ld      c,a
-        ldi     a,(hl)
-       	ld		b,a
-       	ldi		a,(hl)
-        inc     hl              ; move table pointer to next data
-        inc     hl
-        inc     hl
-        push    hl              ; save table pointer
-        ld      l,c
-        ld      h,b
-        ld		c,a
-        call    text            ; display the indicated 16 chars
-        pop     hl
-        jr      disp
+		call	vbwait
+		ld		hl, $9844
+		ld		de, title
+		ld		c, $0C
+		call	text
+		ld		hl,	$9885
+		ld		de, author
+		ld		c, $0A
+		call	text
+		ld		hl, $98c2
+		ld		de, copyr
+		ld		c, $11
+		call	text
+		call	vbwait
+		ld		hl, $98e4
+		inc		de
+		ld		c, $0D
+		call	text
+		ld		hl, $99e9
+		ld		de, smess
+		ld		c, $02
+		call	text
 
 xtext:  ld      a,(count)       ; display total number of songs
         ld      hl,$99ee
@@ -399,7 +400,7 @@ pal:    ld      a,b
 
         ld      a,(TAC)         ; check for 2x clock rate flag
         bit     7,a
-        ret     z
+        ;ret     z
         ld      hl,$ff4d        ; CPU clock speed control register
         bit     7,(hl)
         ret     nz
@@ -468,6 +469,8 @@ songdn: ld      a,e
         jr      nz,wrapdn
         ld      a,(count)       ; wrap to last song
 wrapdn: ld      e,a             ; fall through to init
+		jr		sinit
+		
 
 ; INIT ROUTINE
 
@@ -520,17 +523,8 @@ wipehi: ld      (hl),b
         ld      a,e             ; store song number in accumulator
         dec     a               ; make it zero-based
         push	af
-		call	GBS_Init
-		pop		af
 		
-		cp ((Song_Table_End-Song_Table_Begin)/2)
-		jr	c, loadmusicstr
-		ld	bc, sfx_str
-		ld	a, 0
-		jp printtitle
-		
-loadmusicstr:
-		ld	bc, songtitles
+		ld		bc, songtitles
 		
 printtitle:
 		ld		l, a
@@ -540,17 +534,21 @@ printtitle:
 		add		hl, hl
 		add		hl, hl
 		add		hl, hl
-		add	hl,	bc
-		ld d, h
-		ld e, l
-		ld	hl, $9962
-		ld	a, $10
-		ld	c, a
-		call text
-		ld	hl, $9982
-		ld	a, $10
-		ld	c, a
-		jp	text
+		add		hl,	bc
+		ld 		d, h
+		ld 		e, l
+		ld		hl, $9962
+		ld		a, $10
+		ld		c, a
+		call 	text
+		ld		hl, $9982
+		ld		a, $10
+		ld		c, a
+		call 	text
+		
+		pop		af
+		jp		GBS_Init
+		
 		
 
         ;jp    (hl)            ; "call" the module's init address
@@ -737,8 +735,172 @@ songtitles:
 		.db "  Credit Roll   "
 		.db "                "
 		
-sfx_str:
-		.db "      SFX       "
+		.db "  SFX 01 of 56  "
+		.db "                "
+		
+		.db "  SFX 02 of 56  "
+		.db "                "
+		
+		.db "  SFX 03 of 56  "
+		.db "                "
+		
+		.db "  SFX 04 of 56  "
+		.db "                "
+		
+		.db "  SFX 05 of 56  "
+		.db "                "
+		
+		.db "  SFX 06 of 56  "
+		.db "                "
+		
+		.db "  SFX 07 of 56  "
+		.db "                "
+		
+		.db "  SFX 08 of 56  "
+		.db "                "
+		
+		.db "  SFX 09 of 56  "
+		.db "                "
+		
+		.db "  SFX 10 of 56  "
+		.db "                "
+		
+		.db "  SFX 11 of 56  "
+		.db "                "
+		
+		.db "  SFX 12 of 56  "
+		.db "                "
+		
+		.db "  SFX 13 of 56  "
+		.db "                "
+		
+		.db "  SFX 14 of 56  "
+		.db "                "
+		
+		.db "  SFX 15 of 56  "
+		.db "                "
+		
+		.db "  SFX 16 of 56  "
+		.db "                "
+		
+		.db "  SFX 17 of 56  "
+		.db "                "
+		
+		.db "  SFX 18 of 56  "
+		.db "                "
+		
+		.db "  SFX 19 of 56  "
+		.db "                "
+		
+		.db "  SFX 20 of 56  "
+		.db "                "
+		
+		.db "  SFX 21 of 56  "
+		.db "                "
+		
+		.db "  SFX 22 of 56  "
+		.db "                "
+		
+		.db "  SFX 23 of 56  "
+		.db "                "
+		
+		.db "  SFX 24 of 56  "
+		.db "                "
+		
+		.db "  SFX 25 of 56  "
+		.db "                "
+		
+		.db "  SFX 26 of 56  "
+		.db "                "
+		
+		.db "  SFX 27 of 56  "
+		.db "                "
+		
+		.db "  SFX 28 of 56  "
+		.db "                "
+		
+		.db "  SFX 29 of 56  "
+		.db "                "
+		
+		.db "  SFX 30 of 56  "
+		.db "                "
+		
+		.db "  SFX 31 of 56  "
+		.db "                "
+		
+		.db "  SFX 32 of 56  "
+		.db "                "
+		
+		.db "  SFX 33 of 56  "
+		.db "                "
+		
+		.db "  SFX 34 of 56  "
+		.db "                "
+		
+		.db "  SFX 35 of 56  "
+		.db "                "
+		
+		.db "  SFX 36 of 56  "
+		.db "                "
+		
+		.db "  SFX 37 of 56  "
+		.db "                "
+		
+		.db "  SFX 38 of 56  "
+		.db "                "
+		
+		.db "  SFX 39 of 56  "
+		.db "                "
+		
+		.db "  SFX 40 of 56  "
+		.db "                "
+		
+		.db "  SFX 41 of 56  "
+		.db "                "
+		
+		.db "  SFX 42 of 56  "
+		.db "                "
+		
+		.db "  SFX 43 of 56  "
+		.db "                "
+		
+		.db "  SFX 44 of 56  "
+		.db "                "
+		
+		.db "  SFX 45 of 56  "
+		.db "                "
+		
+		.db "  SFX 46 of 56  "
+		.db "                "
+		
+		.db "  SFX 47 of 56  "
+		.db "                "
+		
+		.db "  SFX 48 of 56  "
+		.db "                "
+		
+		.db "  SFX 49 of 56  "
+		.db "                "
+		
+		.db "  SFX 50 of 56  "
+		.db "                "
+		
+		.db "  SFX 51 of 56  "
+		.db "                "
+		
+		.db "  SFX 52 of 56  "
+		.db "                "
+		
+		.db "  SFX 53 of 56  "
+		.db "                "
+		
+		.db "  SFX 54 of 56  "
+		.db "                "
+		
+		.db "  SFX 55 of 56  "
+		.db "                "
+		
+		.db "  SFX 56 of 56  "
 		.db "                "
 
 		.org $3F00
