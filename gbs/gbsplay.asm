@@ -312,9 +312,20 @@ nowplaying:
 	.db "Now Playing:"
 	
 selectsong:
-	.db	"Select song:"
+	.db	"Selected song:"
 	
 smess:  .db     "SFX:   /"        ; constant string for "### OF ###"
+timestr:	.db	"Time:   :  /  :"
+
+timestroffset	.equ	$9A01
+curtimemin		.equ	$9A08
+curtimesec		.equ	$9A0B
+maxtimemin		.equ	$9A0E
+maxtimesec		.equ	$9A11
+
+sfxstroffset	.equ	$9A21
+maxsfxoffset	.equ	$9A2A
+cursfxoffset	.equ	$9A27
 
 start:  di                      ; disable interrupts
 
@@ -343,27 +354,33 @@ start:  di                      ; disable interrupts
 		ld		de, copyr
 		ld		c, $11
 		call	text
+		
 		call	vbwait
 		ld		hl, $98C4
 		inc		de
 		ld		c, $0D
 		call	text
-		ld		hl, $9A01
+		ld		hl, timestroffset
+		ld		de, timestr
+		ld		c, $0F
+		call	text
+		ld		hl, sfxstroffset
 		ld		de, smess
 		ld		c, $08
 		call	text
 		call	vbwait
+		
 		ld		hl, $9901
 		ld		de, nowplaying
 		ld		c, $0C
 		call	text
 		ld		hl, $9981
 		ld		de, selectsong
-		ld		c, $0C
+		ld		c, $0E
 		call	text
 
-xtext:  ld      a,sfxcount       ; display total number of songs
-        ld      hl,$9A0A
+xtext:  ld      a,sfxcountnew       ; display total number of songs
+        ld      hl,maxsfxoffset
         call    decb
 
 ; enable either timer or v-blank interrupt
@@ -452,15 +469,19 @@ pal:    ld      a,b
 ;ugetab: Program can have either of these modes, but the one below is the default.
 mplay:  ei                      ; enable interrupts. 'HALT' always halts until interrupt
         halt                    ; CPU will "sleep" until interrupt occurs
+        call	updatemaxsfx
+        call	updatetimer
+        call	updateplaystatus
         call	Audio_FrameProcess
         
         
-        ld		bc,Duration
-        ld		a,(cursong)
-        ld		l,a
-        ld		h,0
-        add		hl,hl
-        add		hl,bc
+        ld		hl,mtimer
+        
+        ld		a,(playmode)
+        bit		7,a
+        jr		z, inct
+        bit		6,a
+        jr		z, scan
         
 		ld		a,(stimer)
 		cp		(hl)
@@ -472,15 +493,40 @@ mplay:  ei                      ; enable interrupts. 'HALT' always halts until i
 		ld		a,(cursong)
 		inc		a
 		ld		(song),a
+		call	vbwait
 		call	songup
+		ld		a,(song)
+		dec		a
+		jr		nz, nextsong
+		call	stopresumeall
+		jr		mplay
+nextsong:
 		call	playmusic
 		jr		mplay
 
-inct:   ld		hl,stimer
-        inc		(hl)
-        jr		nz, scan
-        inc		hl
-        inc		(hl)
+inct:   ;ld		a,(playmode)
+		;bit		6,a
+		;jr		z, scan
+
+		ld		a, (curframe)
+		inc		a
+		ld		(curframe), a
+		cp		60
+		jr		nz, scan
+		xor		a
+		ld		(curframe), a
+		
+		ld		a, (stimer+1)
+		inc		a
+		ld		(stimer+1), a
+		cp		60
+		jr		nz, scan
+		xor		a
+		ld		(stimer+1), a
+		
+		ld		a, (stimer)
+		inc		a
+		ld		(stimer),a
 
 scan:   ld		a,(joypad)
 		ld		d,a
@@ -488,13 +534,9 @@ scan:   ld		a,(joypad)
 		ld		(joypad),a
         cp      d
         call    nz,change       ; if input state changes, go do something
-cplay:  jr      mplay           ; keep playing
+cplay:  jp      mplay           ; keep playing
 
-change: bit     4,a             ; A
-        jr      nz,playmusic
-        bit		5,a				; B
-        jr		nz,playsfx
-        bit		1,a             ; left
+change: bit		1,a             ; left
         jr		nz,songdn
         bit		3,a				; down
         jr		nz,sfxdn		
@@ -502,9 +544,34 @@ change: bit     4,a             ; A
         jr		nz,songup       
         bit		2,a				; up
         jr		nz,sfxup
+        bit     4,a             ; A
+        jr      nz,playmusic
         bit		7,a				; start
-        jr		nz,stopall
-        ret						; go back to playing
+        jr		nz,stopresumeall
+        bit		6,a				; select
+        jr		nz,setplaymode
+        bit		5,a				; B
+        ret		z
+        jp		playsfx
+
+setplaymode:
+		ld		a,(playmode)
+		xor		$80
+		ld		(playmode),a
+		ret
+
+stopresumeall:
+		ld		a,(playmode)
+		xor		$40
+		ld		(playmode),a
+		bit		6,a
+		jr		nz,resume
+		
+stop:
+		call	Audio_Music_Stop
+		jp		Audio_SFX_Stop
+resume:
+		jp		Audio_Music_Resume
 
 songup: ld      a,(song)
         cp      songcount
@@ -524,43 +591,71 @@ wrapdn: ld      (song),a           		; fall through to init
 		ret
 		
 sfxup:	ld		a,(sfx)
-		cp		sfxcount
+		cp		sfxcountnew
 		jr		nz,wrapups
 		xor		a
 wrapups:inc		a
 		ld		(sfx),a
-		ld      hl,$9A07
+		ld      hl,cursfxoffset
         call    decb
 		ret
 		
 sfxdn:	ld		a,(sfx)
 		dec		a
 		jr		nz,wrapdns
-		ld		a,sfxcount
+		ld		a,sfxcountnew
 wrapdns:ld		(sfx),a
-cursfx:	ld      hl,$9A07
+cursfx:	ld      hl,cursfxoffset
         call    decb
 		ret
 
 playmusic:
+		ld		a,(playmode)
+		or		$40
+		ld		(playmode),a
 		ld		a,(song)
 		dec     a               ; make it zero-based
         ld		(cursong),a
         call	printnewsong
         ld		a,(cursong)
 		call	GBS_Init
+		xor	a
+		ld	hl, stimer
+		ldi	(hl), a
+		ld	(hl), a
+		
+		ld		bc,Duration
+        ld		a,(cursong)
+        ld		l,a
+        ld		h,0
+        add		hl,hl
+        add		hl,bc
+        ldi		a,(hl)
+        ld		(mtimer),a
+        ld		a,(hl)
+        ld		(mtimer+1),a
+		
 		ret
 
 playsfx:
+		ld a,(curbank)
+		ld bc,SFXMax
+		ld l,a
+		ld h,0
+		add hl,bc
+		ld h,(hl)
+
 		ld		a,(sfx)
 		dec		a
-		add		a,songcount
-		call	GBS_Init
-		ret
-		
-stopall:
-		call	Audio_Music_Stop
-		jp		Audio_SFX_Stop
+
+		cp	h
+		ret nc
+	
+		cp 44
+		jr c, skipinc
+		inc a
+skipinc
+		jp Audio_SFX_Play
 		
 		
 ;-----------------------------------------
@@ -601,6 +696,57 @@ printsongtitle:
 		ld		a, $10
 		ld		c, a
 		jp	 	text
+		
+		
+updatemaxsfx:
+	ld a,(curbank)
+	ld bc,SFXMax
+	ld l,a
+	ld h,0
+	add hl,bc
+	ld a,(hl)
+	ld hl, maxsfxoffset
+	call decb
+	ret
+	
+updatetimer:
+	ld a,(stimer)
+	ld hl, curtimemin
+	call decb
+	ld a,(stimer+1)
+	ld hl, curtimesec
+	call decb
+	ld a,(mtimer)
+	ld hl, maxtimemin
+	call decb
+	ld a,(mtimer+1)
+	ld hl, maxtimesec
+	call decb
+	ret
+	
+playinfinite:
+	.db "PLAY/INF"
+playcontinuous:
+	.db "PLAYING "
+stopped:
+	.db "STOPPED "
+	
+updateplaystatus:
+	ld	hl, maxsfxoffset+2
+	ld	c,8
+	ld a,(playmode)
+	bit 6,a
+	jr	nz,playstatusplaying
+	ld	de, stopped
+	jp	text
+playstatusplaying:
+	bit 7,a
+	jr z,playstatusinfinite
+	ld	de,playcontinuous
+	jp	text
+playstatusinfinite:
+	ld	de,playinfinite
+	jp	text
 
 ; ripped and slightly tweaked from the 8x8 font of a video card BIOS
 
@@ -785,40 +931,52 @@ songtitles:
 		.db "                "
 		
 Duration:
-		.dw 3840,3840	;Title
-		.dw 7800		;Mysterious Happenings
-		.dw 3600,3600	;Town I
-		.dw 6900		;Nostalgic Sorrow
-		.dw 6240,6240	;Overworld
-		.dw 5700,5700	;Inconvenient Nussances
-		.dw 240			;Victory!
-		.dw 8100,8100	;Castle I
-		.dw 8340		;The Madman Parade
-		.dw 600,600		;Until Tomorrow…
-		.dw 4080		;Stillness of Night
-		.dw 3000		;The Prophecy
-		.dw 4680,4680	;Northern Pass
-		.dw 3300,3300	;Irritable Nuisances
-		.dw 720,720		;Defeat
-		.dw 7020		;The Desert City
-		.dw 4920		;Uncertain Depths
-		.dw 4200		;Dark Forest
-		.dw 6360		;Town II
-		.dw 8400		;Castle II
-		.dw 7200		;The Madman Revealed
-		.dw 8700		;Trouble!
-		.dw 7860		;Frozen Cavern
-		.dw 4200		;Travelling Waters
-		.dw 6000		;Mystic
-		.dw 9600		;Infiltrating the Dark
-		.dw 7680		;He Who Is Unnamed
-		.dw 10020		;Epilogue
-		.dw 17400		;Credit Roll
+		.db 1, 4 	;Title
+		.db 1, 4
+		.db 2, 10 	;Mysterious Happenings
+		.db 1, 0 	;Town I
+		.db 1, 0
+		.db 1, 55 	;Nostalgic Sorrow
+		.db 1, 44 	;Overworld
+		.db 1, 44
+		.db 1, 35 	;Inconvenient Nussances
+		.db 1, 35
+		.db 0, 5 	;Victory!
+		.db 2, 15 	;Castle I
+		.db 2, 15
+		.db 2, 19 	;The Madman Parade
+		.db 0, 10 	;Until Tomorrow…
+		.db 0, 10
+		.db 1, 8 	;Stillness of Night
+		.db 0, 50 	;The Prophecy
+		.db 1, 18 	;Northern Pass
+		.db 1, 18
+		.db 0, 55 	;Irritable Nuisances
+		.db 0, 55
+		.db 0, 12 	;Defeat
+		.db 0, 12
+		.db 1, 57 	;The Desert City
+		.db 1, 22 	;Uncertain Depths
+		.db 1, 10 	;Dark Forest
+		.db 1, 46 	;Town II
+		.db 2, 20 	;Castle II
+		.db 2, 0 	;The Madman Revealed
+		.db 2, 25 	;Trouble!
+		.db 2, 11 	;Frozen Cavern
+		.db 1, 10 	;Travelling Waters
+		.db 1, 40 	;Mystic
+		.db 2, 40 	;Infiltrating the Dark
+		.db 2, 8 	;He Who Is Unnamed
+		.db 2, 47 	;Epilogue
+		.db 4, 50 	;Credit Roll
+
+SFXMax:
+	.db	0,30,30,56,56,56,56,56,56,56,56,56,56,56,56,56,56,56
 
 		
-		.org $3E00
+		.org $3F00
 header:	.db "GBS", $01
-count:	.db songcount+sfxcount
+count:	.db songcount+sfxcountold+sfxcountnew
 first:	.db $01
 		.dw load
 init:	.dw GBS_Init
@@ -875,17 +1033,18 @@ Song_Table_Begin:
 	.DB   $03,0         ; 27 - ending2
 Song_Table_End:
 
-SFXMax:
-	.db	0,30,30,56,56,56,56,56,56,56,56,56,56,56,56,56,56,56
-
 song		.equ	$d000
 cursong		.equ	$d001
 songcount	.equ	((Song_Table_End-Song_Table_Begin)/2)
 sfx			.equ	$d002
-sfxcount	.equ	56
+sfxcountold	.equ	30
+sfxcountnew	.equ	56
 joypad		.equ	$d003
 stimer		.equ	$d004
 curbank		.equ	$d006
+curframe	.equ	$d007
+mtimer		.equ	$d008
+playmode	.equ	$d00a
 
 Audio_Init				.equ	$4000
 Audio_FrameProcess		.equ	$4003
@@ -899,9 +1058,6 @@ Audio_SFX_UnlockChnl3	.equ	$4018
 
 
 GBS_Init:
-	push bc
-	push de
-	
 	cp songcount
 	jr c, Play_Song
 	jp Play_SFX
@@ -921,43 +1077,34 @@ Play_Song:
 	call Audio_Init
 	pop hl
 	ld a, (hl)
-	pop bc
-	pop de
-	call Audio_Music_Play
-	xor	a
-	ld	hl, stimer
-	ldi	(hl), a
-	ld	(hl), a
-	ld a,(curbank)
-	ld bc,SFXMax
-	ld l,a
-	ld h,0
-	add hl,bc
-	ld a,(hl)
-	ld hl, $9A0A
-	call decb
-	ret
+	jp Audio_Music_Play
 	
 Play_SFX:
-	sub songcount
-	push af
-	ld a,(curbank)
-	ld bc,SFXMax
-	ld l,a
-	ld h,0
-	add hl,bc
-	ld h,(hl)
-	pop af
-	pop bc
-	pop de
-	cp	h
-	ret nc
+	sub	songcount
+	ld de, $2000
 	
+	cp sfxcountnew
+	jr c, newsfx
+	jr oldsfx
+newsfx:
+	push af
+	ld a, $03
+finishsfx:
+	ld (de), a
+	call Audio_Init
+	pop af
+
 	cp 44
 	jr c, Skip_Increment
 	inc a
 Skip_Increment:
 	jp Audio_SFX_Play
+	
+oldsfx:
+	sub sfxcountnew
+	push af
+	ld a, $01
+	jr finishsfx
 	
 	
 .org $3fff
