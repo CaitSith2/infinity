@@ -624,7 +624,7 @@ playmusic:
         ld		(cursong),a
         call	printnewsong
         ld		a,(cursong)
-		call	GBS_Init
+		call	LoadSong
 		xor	a
 		ld	hl, stimer
 		ldi	(hl), a
@@ -762,6 +762,23 @@ playstatusplaying:
 playstatusinfinite:
 	ld	de,playinfinite
 	jp	text
+
+LoadSong:
+	ld de, $2000
+	ld hl, Song_Table_Begin
+	add a, a
+	add a, l
+	ld l, a
+	ld a, (hl)
+	ld (de), a
+	ld (curbank), a
+	inc l
+	push hl
+	
+	call Audio_Init
+	pop hl
+	ld a, (hl)
+	jp Audio_Music_Play
 
 ; ripped and slightly tweaked from the 8x8 font of a video card BIOS
 
@@ -1073,34 +1090,30 @@ Audio_SFX_UnlockChnl3	.equ	$4018
 
 
 GBS_Init:
+	ld de, $2000
 	cp songcount
-	jr c, Play_Song
-	jp Play_SFX
+	jr nc, Play_SFX
 	
 Play_Song:
-	ld de, $2000
 	ld hl, Song_Table_Begin
 	add a, a
 	add a, l
 	ld l, a
-	ld a, (hl)
+	ldi a, (hl)
 	ld (de), a
-	ld (curbank), a
-	inc l
 	push hl
 	
 	call Audio_Init
 	pop hl
 	ld a, (hl)
-	jp Audio_Music_Play
+	jr Audio_Music_Play
 	
 Play_SFX:
 	sub	songcount
-	ld de, $2000
 	
 	cp sfxcountnew
-	jr c, newsfx
-	jr oldsfx
+	jr nc, oldsfx
+	
 newsfx:
 	push af
 	ld a, $03
@@ -1113,7 +1126,7 @@ finishsfx:
 	jr c, Skip_Increment
 	inc a
 Skip_Increment:
-	jp Audio_SFX_Play
+	jr Audio_SFX_Play
 	
 oldsfx:
 	sub sfxcountnew
