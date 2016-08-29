@@ -14,6 +14,7 @@ copy /Y /b ..\gbs\gbsplay.obj + ..\resource\audio2o.bin + ..\resource\audio1o.bi
 fixgb infinity-gbc_gbs.gb "INFINITY GBS   "
 fixgbs infinity-gbc_gbs.gb infinity-gbc.gbs
 copy /Y ..\gbs\infinity-gbc.m3u .
+copy /Y ..\gbs\readme.txt .
 cd ..\GBS
 del gbsplay.obj
 cd /d %CUR_DIR%
