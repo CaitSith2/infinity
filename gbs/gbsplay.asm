@@ -41,6 +41,7 @@ TimerV  .equ    $04 ; Default. Timer only
 ; This is done automatically in GBS2GB.
 Origin  .equ    $0150
 
+
 ;enable either timer or v-blank interrupt
 
 ;load    .equ    $3f70           ; set to load address of GBS file
@@ -157,10 +158,10 @@ clow:   ldi     (hl),a
 
 ; subroutine to display a byte value as numeric characters
 
-decb:   ld      b,a
-        call    vbwait
-        ld      a,b
-        call    div10           ; get 1's digit
+decb:   ;ld      b,a
+        ;call    vbwait
+        ;ld      a,b
+        ;call    div10           ; get 1's digit
         call    div10           ; get 10's digit
         add     a,$30           ; add offset to tile #
         ld      (hl),a          ; write 100's digit
@@ -272,7 +273,6 @@ jloop:  ldh     a,($00)
 ; E000 F000 0D 20FB 2F E60F C9 (0x11 bytes used)
 
 ; Some spare NOPs to redistribute through the prog as needed
-smess:  .db     "OF",$00        ; constant string for "### OF ###"
 
         nop
 
@@ -308,6 +308,13 @@ name:   .db     "INFINITY GBS   " ; cart name   15 chars
 ; start procedure
         .org    Origin          ; See start of file.
         
+nowplaying:
+	.db "Now Playing:"
+	
+selectsong:
+	.db	"Select song:"
+	
+smess:  .db     "SFX:   /"        ; constant string for "### OF ###"
 
 start:  di                      ; disable interrupts
 
@@ -324,30 +331,39 @@ start:  di                      ; disable interrupts
 ; display information on screen according to table data
 
 		call	vbwait
-		ld		hl, $9844
+		ld		hl, $9824
 		ld		de, title
 		ld		c, $0C
 		call	text
-		ld		hl,	$9885
+		ld		hl,	$9865
 		ld		de, author
 		ld		c, $0A
 		call	text
-		ld		hl, $98c2
+		ld		hl, $98A2
 		ld		de, copyr
 		ld		c, $11
 		call	text
 		call	vbwait
-		ld		hl, $98e4
+		ld		hl, $98C4
 		inc		de
 		ld		c, $0D
 		call	text
-		ld		hl, $99e9
+		ld		hl, $9A01
 		ld		de, smess
-		ld		c, $02
+		ld		c, $08
+		call	text
+		call	vbwait
+		ld		hl, $9901
+		ld		de, nowplaying
+		ld		c, $0C
+		call	text
+		ld		hl, $9981
+		ld		de, selectsong
+		ld		c, $0C
 		call	text
 
-xtext:  ld      a,(count)       ; display total number of songs
-        ld      hl,$99ee
+xtext:  ld      a,sfxcount       ; display total number of songs
+        ld      hl,$9A0A
         call    decb
 
 ; enable either timer or v-blank interrupt
@@ -378,11 +394,20 @@ intr:   ldh     ($ff),a         ; set interrupt
 
         ei                      ; enable interrupts
 
+        xor		a
+        ld		(joypad),a
+        inc		a
+        ld		(sfx),a
+        
         ld      a,(first)       ; song counter
-        ld      e,a
-        ld      d,$00           ; bounce flag
+        ld		(song),a
 
-        jr      sinit           ; start the first song
+        call    playmusic           ; start the first song
+        call	vbwait
+        call	printcurrentsong
+        ld		a,1
+        call	cursfx
+        jp		mplay
 
 ; set the GGB background palette and 2x CPU clock rate if indicated
 
@@ -427,106 +452,137 @@ pal:    ld      a,b
 ;ugetab: Program can have either of these modes, but the one below is the default.
 mplay:  ei                      ; enable interrupts. 'HALT' always halts until interrupt
         halt                    ; CPU will "sleep" until interrupt occurs
+        call	Audio_FrameProcess
         
+        
+        ld		bc,Duration
+        ld		a,(cursong)
+        ld		l,a
+        ld		h,0
+        add		hl,hl
+        add		hl,bc
+        
+		ld		a,(stimer)
+		cp		(hl)
+		jr		nz, inct
+		ld		a,(stimer+1)
+		inc		hl
+		cp		(hl)
+		jr		nz,	inct
+		ld		a,(cursong)
+		inc		a
+		ld		(song),a
+		call	songup
+		call	playmusic
+		jr		mplay
 
-        ld      hl,scan         ; push return address on stack
-        push    hl
+inct:   ld		hl,stimer
+        inc		(hl)
+        jr		nz, scan
+        inc		hl
+        inc		(hl)
 
-        ld      hl,play         ; get play address into HL
-        ldi     a,(hl)
-        ld      h,(hl)
-        ld      l,a
-
-        jp      (hl)            ; "call" the module's play address
-
-scan:   call    input           ; read buttons/joypad
-
-        pop     de              ; get state information off stack
+scan:   ld		a,(joypad)
+		ld		d,a
+		call    input           ; read buttons/joypad
+		ld		(joypad),a
         cp      d
-        jr      nz,change       ; if input state changes, go do something
-cplay:  push    de
-        jr      mplay           ; keep playing
+        call    nz,change       ; if input state changes, go do something
+cplay:  jr      mplay           ; keep playing
 
-change: ld      d,a             ; save the new state
+change: bit     4,a             ; A
+        jr      nz,playmusic
+        bit		5,a				; B
+        jr		nz,playsfx
+        bit		1,a             ; left
+        jr		nz,songdn
+        bit		3,a				; down
+        jr		nz,sfxdn		
+        bit		0,a             ; right
+        jr		nz,songup       
+        bit		2,a				; up
+        jr		nz,sfxup
+        bit		7,a				; start
+        jr		nz,stopall
+        ret						; go back to playing
 
-        bit     7,a             ; start
-        jr      nz,sinit
-        and     $0a             ; left and down
-        jr      nz,songdn
-        ld      a,d
-        and     $05             ; right and up
-        jr      z,cplay         ; go back to playing
-
-songup: ld      a,(count)
-        cp      e
+songup: ld      a,(song)
+        cp      songcount
         jr      nz,wrapup
-        ld      e,0             ; wrap to first song
-wrapup: inc     e               ; increment song
-        jr      sinit           ; init the new song
+        xor		a             ; wrap to first song
+wrapup: inc     a               ; increment song
+		ld		(song),a
+        call	printcurrentsong
+        ret
 
-songdn: ld      a,e
+songdn: ld      a,(song)
         dec     a               ; decrement song
         jr      nz,wrapdn
-        ld      a,(count)       ; wrap to last song
-wrapdn: ld      e,a             ; fall through to init
-		jr		sinit
+        ld      a,songcount     ; wrap to last song
+wrapdn: ld      (song),a           		; fall through to init
+        call	printcurrentsong
+		ret
 		
-
-; INIT ROUTINE
-
-; Initializing/resetting the sound registers is a bit tricky.
-; After some trial and error, the following was chosen so that
-; all sound production is stopped from previous playing, and the
-; sound system is ready for playing the next selection.
-
-sinit:  xor     a
-        ldh     ($12),a         ; sound 1 stop & mute
-        ldh     ($17),a         ; sound 2 stop & mute
-        ldh     ($1a),a         ; sound 3 stop
-        ldh     ($1c),a         ; sound 3 mute
-        ldh     ($21),a         ; sound 4 stop & mute
-        ld      a,$80
-        ldh     ($26),a         ; sound enabled, individual sounds off
-        ld      a,$77
-        ldh     ($24),a         ; full volume both channels, no synth
-        ld      a,$ff
-        ldh     ($25),a         ; all sounds output to both channels
-
-        ld      a,$e0
-        ld      b,$00
-        ld      hl,$a000        ; zero low ram from $a000 to $dfff
-wipelo: ld      (hl),b
-        inc     hl
-        cp      h
-        jr      nz,wipelo
-        ld      a,$ff
-        ld      hl,$ff80        ; zero high ram from $ff80 to $fffe
-wipehi: ld      (hl),b
-        inc     hl
-        cp      l
-        jr      nz,wipehi
-
-        ld      a,e             ; display the selection number
-        ld      hl,$99e7
+sfxup:	ld		a,(sfx)
+		cp		sfxcount
+		jr		nz,wrapups
+		xor		a
+wrapups:inc		a
+		ld		(sfx),a
+		ld      hl,$9A07
         call    decb
-
-        push    de              ; store state information on stack
-
-        ld      hl,mplay        ; push return address on stack
-        push    hl
-
-        ld      hl,init         ; get init address into HL
-        ldi     a,(hl)
-        ld      h,(hl)
-        ld      l,a
-
-        ld      a,e             ; store song number in accumulator
-        dec     a               ; make it zero-based
-        push	af
+		ret
 		
-		ld		bc, songtitles
+sfxdn:	ld		a,(sfx)
+		dec		a
+		jr		nz,wrapdns
+		ld		a,sfxcount
+wrapdns:ld		(sfx),a
+cursfx:	ld      hl,$9A07
+        call    decb
+		ret
+
+playmusic:
+		ld		a,(song)
+		dec     a               ; make it zero-based
+        ld		(cursong),a
+        call	printnewsong
+        ld		a,(cursong)
+		call	GBS_Init
+		ret
+
+playsfx:
+		ld		a,(sfx)
+		dec		a
+		add		a,songcount
+		call	GBS_Init
+		ret
 		
-printtitle:
+stopall:
+		call	Audio_Music_Stop
+		jp		Audio_SFX_Stop
+		
+		
+;-----------------------------------------
+		
+		
+printnewsong:
+		ld		hl, $9942
+		push	hl
+		ld		hl,	$9922
+		push	hl
+		jr		printsongtitle
+		
+printcurrentsong:
+		ld		a,(song)
+		dec		a
+		ld		hl, $99C2
+		push	hl
+		ld		hl, $99A2
+		push	hl
+		
+printsongtitle:
+		ld		bc, songtitles	; print the song title
 		ld		l, a
 		ld		h, 0
 		add		hl, hl
@@ -537,21 +593,14 @@ printtitle:
 		add		hl,	bc
 		ld 		d, h
 		ld 		e, l
-		ld		hl, $9962
+		pop		hl
 		ld		a, $10
 		ld		c, a
 		call 	text
-		ld		hl, $9982
+		pop		hl
 		ld		a, $10
 		ld		c, a
-		call 	text
-		
-		pop		af
-		jp		GBS_Init
-		
-		
-
-        ;jp    (hl)            ; "call" the module's init address
+		jp	 	text
 
 ; ripped and slightly tweaked from the 8x8 font of a video card BIOS
 
@@ -735,181 +784,45 @@ songtitles:
 		.db "  Credit Roll   "
 		.db "                "
 		
-		.db "  SFX 01 of 56  "
-		.db "                "
-		
-		.db "  SFX 02 of 56  "
-		.db "                "
-		
-		.db "  SFX 03 of 56  "
-		.db "                "
-		
-		.db "  SFX 04 of 56  "
-		.db "                "
-		
-		.db "  SFX 05 of 56  "
-		.db "                "
-		
-		.db "  SFX 06 of 56  "
-		.db "                "
-		
-		.db "  SFX 07 of 56  "
-		.db "                "
-		
-		.db "  SFX 08 of 56  "
-		.db "                "
-		
-		.db "  SFX 09 of 56  "
-		.db "                "
-		
-		.db "  SFX 10 of 56  "
-		.db "                "
-		
-		.db "  SFX 11 of 56  "
-		.db "                "
-		
-		.db "  SFX 12 of 56  "
-		.db "                "
-		
-		.db "  SFX 13 of 56  "
-		.db "                "
-		
-		.db "  SFX 14 of 56  "
-		.db "                "
-		
-		.db "  SFX 15 of 56  "
-		.db "                "
-		
-		.db "  SFX 16 of 56  "
-		.db "                "
-		
-		.db "  SFX 17 of 56  "
-		.db "                "
-		
-		.db "  SFX 18 of 56  "
-		.db "                "
-		
-		.db "  SFX 19 of 56  "
-		.db "                "
-		
-		.db "  SFX 20 of 56  "
-		.db "                "
-		
-		.db "  SFX 21 of 56  "
-		.db "                "
-		
-		.db "  SFX 22 of 56  "
-		.db "                "
-		
-		.db "  SFX 23 of 56  "
-		.db "                "
-		
-		.db "  SFX 24 of 56  "
-		.db "                "
-		
-		.db "  SFX 25 of 56  "
-		.db "                "
-		
-		.db "  SFX 26 of 56  "
-		.db "                "
-		
-		.db "  SFX 27 of 56  "
-		.db "                "
-		
-		.db "  SFX 28 of 56  "
-		.db "                "
-		
-		.db "  SFX 29 of 56  "
-		.db "                "
-		
-		.db "  SFX 30 of 56  "
-		.db "                "
-		
-		.db "  SFX 31 of 56  "
-		.db "                "
-		
-		.db "  SFX 32 of 56  "
-		.db "                "
-		
-		.db "  SFX 33 of 56  "
-		.db "                "
-		
-		.db "  SFX 34 of 56  "
-		.db "                "
-		
-		.db "  SFX 35 of 56  "
-		.db "                "
-		
-		.db "  SFX 36 of 56  "
-		.db "                "
-		
-		.db "  SFX 37 of 56  "
-		.db "                "
-		
-		.db "  SFX 38 of 56  "
-		.db "                "
-		
-		.db "  SFX 39 of 56  "
-		.db "                "
-		
-		.db "  SFX 40 of 56  "
-		.db "                "
-		
-		.db "  SFX 41 of 56  "
-		.db "                "
-		
-		.db "  SFX 42 of 56  "
-		.db "                "
-		
-		.db "  SFX 43 of 56  "
-		.db "                "
-		
-		.db "  SFX 44 of 56  "
-		.db "                "
-		
-		.db "  SFX 45 of 56  "
-		.db "                "
-		
-		.db "  SFX 46 of 56  "
-		.db "                "
-		
-		.db "  SFX 47 of 56  "
-		.db "                "
-		
-		.db "  SFX 48 of 56  "
-		.db "                "
-		
-		.db "  SFX 49 of 56  "
-		.db "                "
-		
-		.db "  SFX 50 of 56  "
-		.db "                "
-		
-		.db "  SFX 51 of 56  "
-		.db "                "
-		
-		.db "  SFX 52 of 56  "
-		.db "                "
-		
-		.db "  SFX 53 of 56  "
-		.db "                "
-		
-		.db "  SFX 54 of 56  "
-		.db "                "
-		
-		.db "  SFX 55 of 56  "
-		.db "                "
-		
-		.db "  SFX 56 of 56  "
-		.db "                "
+Duration:
+		.dw 3840,3840	;Title
+		.dw 7800		;Mysterious Happenings
+		.dw 3600,3600	;Town I
+		.dw 6900		;Nostalgic Sorrow
+		.dw 6240,6240	;Overworld
+		.dw 5700,5700	;Inconvenient Nussances
+		.dw 240			;Victory!
+		.dw 8100,8100	;Castle I
+		.dw 8340		;The Madman Parade
+		.dw 600,600		;Until Tomorrow…
+		.dw 4080		;Stillness of Night
+		.dw 3000		;The Prophecy
+		.dw 4680,4680	;Northern Pass
+		.dw 3300,3300	;Irritable Nuisances
+		.dw 720,720		;Defeat
+		.dw 7020		;The Desert City
+		.dw 4920		;Uncertain Depths
+		.dw 4200		;Dark Forest
+		.dw 6360		;Town II
+		.dw 8400		;Castle II
+		.dw 7200		;The Madman Revealed
+		.dw 8700		;Trouble!
+		.dw 7860		;Frozen Cavern
+		.dw 4200		;Travelling Waters
+		.dw 6000		;Mystic
+		.dw 9600		;Infiltrating the Dark
+		.dw 7680		;He Who Is Unnamed
+		.dw 10020		;Epilogue
+		.dw 17400		;Credit Roll
 
-		.org $3F00
+		
+		.org $3E00
 header:	.db "GBS", $01
-count:	.db ((Song_Table_End-Song_Table_Begin)/2)+56
+count:	.db songcount+sfxcount
 first:	.db $01
 		.dw load
 init:	.dw GBS_Init
-play:	.dw $4003
+play:	.dw Audio_FrameProcess
 stack:	.dw $df80
 TAC:	.db $00
 TMA:	.db $00
@@ -961,11 +874,35 @@ Song_Table_Begin:
 	.DB   $04,0         ; 26 - ending1
 	.DB   $03,0         ; 27 - ending2
 Song_Table_End:
+
+SFXMax:
+	.db	0,30,30,56,56,56,56,56,56,56,56,56,56,56,56,56,56,56
+
+song		.equ	$d000
+cursong		.equ	$d001
+songcount	.equ	((Song_Table_End-Song_Table_Begin)/2)
+sfx			.equ	$d002
+sfxcount	.equ	56
+joypad		.equ	$d003
+stimer		.equ	$d004
+curbank		.equ	$d006
+
+Audio_Init				.equ	$4000
+Audio_FrameProcess		.equ	$4003
+Audio_Music_Play		.equ	$4006
+Audio_Music_Stop		.equ	$4009
+Audio_Music_Resume		.equ	$400C
+Audio_SFX_Play			.equ	$400F
+Audio_SFX_Stop			.equ	$4012
+Audio_SFX_LockChnl3		.equ	$4015
+Audio_SFX_UnlockChnl3	.equ	$4018
+
+
 GBS_Init:
 	push bc
 	push de
 	
-	cp ((Song_Table_End-Song_Table_Begin)/2)
+	cp songcount
 	jr c, Play_Song
 	jp Play_SFX
 	
@@ -977,31 +914,50 @@ Play_Song:
 	ld l, a
 	ld a, (hl)
 	ld (de), a
+	ld (curbank), a
 	inc l
 	push hl
 	
-	call $4000
+	call Audio_Init
 	pop hl
 	ld a, (hl)
 	pop bc
 	pop de
-	jp $4006
+	call Audio_Music_Play
+	xor	a
+	ld	hl, stimer
+	ldi	(hl), a
+	ld	(hl), a
+	ld a,(curbank)
+	ld bc,SFXMax
+	ld l,a
+	ld h,0
+	add hl,bc
+	ld a,(hl)
+	ld hl, $9A0A
+	call decb
+	ret
 	
 Play_SFX:
-	sub ((Song_Table_End-Song_Table_Begin)/2)
-	ld de, $2000
+	sub songcount
 	push af
-	ld a, $03
-	ld (de), a
-	call $4000
+	ld a,(curbank)
+	ld bc,SFXMax
+	ld l,a
+	ld h,0
+	add hl,bc
+	ld h,(hl)
 	pop af
 	pop bc
 	pop de
+	cp	h
+	ret nc
+	
 	cp 44
 	jr c, Skip_Increment
 	inc a
 Skip_Increment:
-	jp $400f
+	jp Audio_SFX_Play
 	
 	
 .org $3fff
