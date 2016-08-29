@@ -309,10 +309,10 @@ name:   .db     "INFINITY GBS   " ; cart name   15 chars
         .org    Origin          ; See start of file.
         
 nowplaying:
-	.db "Now Playing:"
+	.db "Now Playing:  /"
 	
 selectsong:
-	.db	"Selected song:"
+	.db	"Selected song:  /"
 	
 smess:  .db     "SFX:   /"        ; constant string for "### OF ###"
 timestr:	.db	"Time:   :  /  :"
@@ -372,16 +372,22 @@ start:  di                      ; disable interrupts
 		
 		ld		hl, $9901
 		ld		de, nowplaying
-		ld		c, $0C
+		ld		c, $0F
 		call	text
 		ld		hl, $9981
 		ld		de, selectsong
-		ld		c, $0E
+		ld		c, $11
 		call	text
 
 xtext:  ld      a,sfxcountnew       ; display total number of songs
         ld      hl,maxsfxoffset
         call    decb
+        ld		a,songcount
+        ld		hl,$9911
+        call	decb
+        ld		a,songcount
+        ld		hl,$9993
+        call	decb
 
 ; enable either timer or v-blank interrupt
 
@@ -662,21 +668,27 @@ skipinc
 		
 		
 printnewsong:
+		ld		hl, $990E
+		push	hl
+		inc		a
+		push	af
 		ld		hl, $9942
 		push	hl
 		ld		hl,	$9922
-		push	hl
 		jr		printsongtitle
 		
 printcurrentsong:
+		ld		hl, $9990
+		push	hl
 		ld		a,(song)
-		dec		a
+		push	af
 		ld		hl, $99C2
 		push	hl
 		ld		hl, $99A2
-		push	hl
 		
 printsongtitle:
+		dec		a
+		push	hl
 		ld		bc, songtitles	; print the song title
 		ld		l, a
 		ld		h, 0
@@ -695,7 +707,10 @@ printsongtitle:
 		pop		hl
 		ld		a, $10
 		ld		c, a
-		jp	 	text
+		call 	text
+		pop		af
+		pop		hl
+		jp		decb
 		
 		
 updatemaxsfx:
