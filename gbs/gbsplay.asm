@@ -958,7 +958,7 @@ Duration:
 		.db 1, 35
 		.db 0, 5 	;Victory!
 		.db 2, 15 	;Castle I
-		.db 2, 15
+		.db 1, 23
 		.db 2, 19 	;The Madman Parade
 		.db 0, 10 	;Until Tomorrow…
 		.db 0, 10
