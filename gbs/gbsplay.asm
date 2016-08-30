@@ -484,10 +484,11 @@ mplay:  ei                      ; enable interrupts. 'HALT' always halts until i
         ld		hl,mtimer
         
         ld		a,(playmode)
-        bit		7,a
-        jr		z, inct
         bit		6,a
-        jr		z, scan
+        jr		z, scan		;Check if playback Stopped
+        bit		7,a
+        jr		z, inct		;Check if playback mode is Infinite
+        
         
 		ld		a,(stimer)
 		cp		(hl)
