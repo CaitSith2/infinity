@@ -158,13 +158,9 @@ clow:   ldi     (hl),a
 
 ; subroutine to display a byte value as numeric characters
 
-decb:   ;ld      b,a
-        ;call    vbwait
-        ;ld      a,b
-        ;call    div10           ; get 1's digit
-        call    div10           ; get 10's digit
+decb:   call    div10           ; get 1's digit
         add     a,$30           ; add offset to tile #
-        ld      (hl),a          ; write 100's digit
+        ld      (hl),a          ; write 10's digit
         ret
 
 div10:  ld      c,0             ; divide by 10
@@ -218,9 +214,6 @@ clear:  ld      a,$20           ; space character
         or      c
         jr      nz,clear
 
-        ld      a,$91           ; enable video display
-        ldh     ($40),a
-
         ld      a,$0a           ; RAM enable
         ld      ($0000),a
 
@@ -231,26 +224,11 @@ clear:  ld      a,$20           ; space character
 input:  ld      a,$20
         ld      c,$03
         call joysub
-        ;ldh     ($00),a
-        ;ldh     a,($00)
-        ;ldh     a,($00)
-        ;ldh     a,($00)
-	;cpl
-        ;and     $0f (0B NOPs)
-	swap	a
+		swap	a
         ld      b,a
         ld      a,$10
         ld      c,$06
         call joysub
-        ;ldh     ($00),a
-        ;ldh     a,($00)
-        ;ldh     a,($00)
-        ;ldh     a,($00)
-        ;ldh     a,($00)
-        ;ldh     a,($00)
-        ;ldh     a,($00)
-	;cpl
-        ;and     $0f (11 NOPs)
         or      b
         swap    a
         ret
@@ -270,17 +248,10 @@ jloop:  ldh     a,($00)
 	cpl
         and     $0f
         ret
-; E000 F000 0D 20FB 2F E60F C9 (0x11 bytes used)
 
-; Some spare NOPs to redistribute through the prog as needed
-
-        nop
-
-colors: .dw     $0000           ; black
-        .dw     $7fff           ; white
-        .dw     $2d6b           ; dark gray
-        .dw     $56b5           ; light gray
-
+; -------------------------------------------------------------------
+; Rom header
+; -------------------------------------------------------------------
         .org    $100            ; entry point
         nop                     ; this nop is customary
         jp      start           ; jump to the start
@@ -341,7 +312,6 @@ start:  di                      ; disable interrupts
 
 ; display information on screen according to table data
 
-		call	vbwait
 		ld		hl, $9824
 		ld		de, title
 		ld		c, $0C
@@ -355,7 +325,6 @@ start:  di                      ; disable interrupts
 		ld		c, $11
 		call	text
 		
-		call	vbwait
 		ld		hl, $98C4
 		inc		de
 		ld		c, $0D
@@ -368,7 +337,6 @@ start:  di                      ; disable interrupts
 		ld		de, smess
 		ld		c, $08
 		call	text
-		call	vbwait
 		
 		ld		hl, $9901
 		ld		de, nowplaying
@@ -415,8 +383,6 @@ tma2:   ldh     ($06),a         ; set Timer Modulus register (TMA)
         ld      a,TimerV           ; timer IRQ bit
 intr:   ldh     ($ff),a         ; set interrupt
 
-        ei                      ; enable interrupts
-
         xor		a
         ld		(joypad),a
         inc		a
@@ -426,15 +392,48 @@ intr:   ldh     ($ff),a         ; set interrupt
         ld		(song),a
 
         call    playmusic           ; start the first song
-        call	vbwait
         call	printcurrentsong
         ld		a,1
         call	cursfx
+        
+        ld      a,$91           ; enable video display
+        ldh     ($40),a
+        
+		ei                      ; enable interrupts
         jp		mplay
 
 ; set the GGB background palette and 2x CPU clock rate if indicated
 
-cgb:    ld      bc,$0008        ; count up from 0, down from 8
+;				black, pure,  dark,  light
+colors: .dw     $0000, $7fff, $2d6b, $56b5	;white
+        .dw		$0000, $7c00, $2c00, $5400	;Blue
+        .dw		$0000, $03e0, $0160, $02a0	;Green
+        .dw		$0000, $001f, $000b, $0015	;Red
+        .dw		$0000, $7fe0, $2d60, $56a0	;Cyan
+        .dw		$0000, $7c1f, $2c0b, $5415	;Magenta
+        .dw		$0000, $03ff, $016b, $02b5	;Yellow
+        .dw		$0000, $0000, $0000, $0000	;Black
+        
+pallete:.db		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.db		4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4
+		.db		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.db		2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2
+		.db		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.db		3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3
+		.db		3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3
+		.db		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.db		0,2,2,2,0,2,2,2,2,2,2,2,2,4,4,1,4,4,0,0
+		.db		5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5
+		.db		5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5
+		.db		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.db		0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,4,4,1,4,4
+		.db		5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5
+		.db		5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5
+		.db		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.db		0,2,2,2,2,2,0,6,6,6,6,6,2,6,6,6,6,6,0,0
+		.db		0,2,2,2,2,2,4,4,1,4,4,0,6,6,6,6,6,6,6,6
+
+cgb:    ld      bc,$0040        ; count up from 0, down from 64
         ld      de,colors       ; point to palette data
         ld      hl,$ff68        ; palette control register
 pal:    ld      a,b
@@ -458,6 +457,29 @@ pal:    ld      a,b
         ldh     ($ff),a
         ld      a,$30
         ldh     ($00),a
+        
+        ld		a, $01
+        ldh		($4f),a
+        
+        ld		b, $12
+        ld		de, pallete
+        ld		hl, $9800
+ploop1:	ld		c, $14
+ploop2:	ld      a,(de)
+	    ldi     (hl),a
+        inc     de
+        dec     c
+        jr      nz,ploop2
+        push	bc
+        ld		bc, $000c
+        add		hl,bc
+        pop		bc
+        dec		b
+        jr		nz,ploop1
+        
+        xor		a
+        ldh		($4f),a
+        
         stop
         ret
 
