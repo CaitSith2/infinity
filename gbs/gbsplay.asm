@@ -519,17 +519,15 @@ mplay:  ei                      ; enable interrupts. 'HALT' always halts until i
 		inc		hl
 		cp		(hl)
 		jr		nz,	inct
+		
 		ld		a,(cursong)
 		inc		a
-		ld		(song),a
-		call	vbwait
-		call	songup
-		ld		a,(song)
-		dec		a
-		jr		nz, nextsong
+		cp		songcount
+		jr		c, nextsong
 		call	stopresumeall
 		jr		mplay
 nextsong:
+		inc		a
 		call	playmusic
 		jr		mplay
 
@@ -574,7 +572,7 @@ change: bit		1,a             ; left
         bit		2,a				; up
         jr		nz,sfxup
         bit     4,a             ; A
-        jr      nz,playmusic
+        jr      nz,playselectedsong
         bit		7,a				; start
         jr		nz,stopresumeall
         bit		6,a				; select
@@ -582,6 +580,10 @@ change: bit		1,a             ; left
         bit		5,a				; B
         ret		z
         jp		playsfx
+
+playselectedsong:
+		ld		a,(song)
+		jr		playmusic
 
 setplaymode:
 		ld		a,(playmode)
@@ -639,15 +641,16 @@ cursfx:	ld      hl,cursfxoffset
 		ret
 
 playmusic:
-		ld		a,(playmode)
-		or		$40
-		ld		(playmode),a
-		ld		a,(song)
 		dec     a               ; make it zero-based
         ld		(cursong),a
         call	printnewsong
         ld		a,(cursong)
 		call	LoadSong
+		
+		ld		a,(playmode)
+		or		$40
+		ld		(playmode),a
+		
 		xor	a
 		ld	hl, stimer
 		ldi	(hl), a
