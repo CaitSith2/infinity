@@ -312,14 +312,20 @@ start:  di                      ; disable interrupts
 
 ; display information on screen according to table data
 
-		ld		hl, $9824
+		ld		hl, $9804
 		ld		de, title
 		ld		c, $0C
 		call	text
-		ld		hl,	$9865
+		ld		hl,	$9844
 		ld		de, author
-		ld		c, $0A
+		ld		c, $0D
 		call	text
+		ld		hl, $9863
+		ld		de, author+15
+		ld		c, $0F
+		call	text
+		
+		
 		ld		hl, $98A2
 		ld		de, copyr
 		ld		c, $11
@@ -414,9 +420,9 @@ colors: .dw     $0000, $7fff, $2d6b, $56b5	;white
         .dw		$0000, $03ff, $016b, $02b5	;Yellow
         .dw		$0000, $0000, $0000, $0000	;Black
         
-pallete:.db		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.db		4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4
+pallete:.db		4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4
 		.db		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.db		2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2
 		.db		2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2
 		.db		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 		.db		3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3
@@ -1044,8 +1050,8 @@ TAC:	.db $00
 TMA:	.db $00
 title:	.db "Infinity GBC"
 		.fill 20, 0
-author:	.db "Eric Hache"
-		.fill 22, 0
+author:	.db "Eric E. Hache, Mathew Valente"
+		.fill 3, 0
 copyr:	.db "1999-2016 Affinix Software, LLC"
 		.db 0
 
